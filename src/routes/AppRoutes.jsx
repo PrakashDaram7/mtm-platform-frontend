@@ -17,6 +17,7 @@ import NotFound from '../pages/public/NotFound.jsx';
 import Dashboard from '../pages/protected/Dashboard.jsx';
 import Profile from '../pages/protected/Profile.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
+import SignUp from '../pages/public/signup.jsx';
 
 export default function AppRoutes() {
   return (
@@ -25,6 +26,7 @@ export default function AppRoutes() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
 
         {/* Protected Routes */}
         <Route 
