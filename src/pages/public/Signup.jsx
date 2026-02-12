@@ -1,48 +1,28 @@
 import { useState } from 'react';
 
-
-export default function Login() {
-  const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+export default function SignUp() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSendOtp = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!identifier) {
-      setError('Email or phone number is required');
+    if (!name || !email || !phone) {
+      setError('All fields are required');
       return;
     }
 
     setError('');
     setLoading(true);
 
-    // Simulate OTP send
+    // Simulate signup API
     setTimeout(() => {
-      console.log('OTP sent to:', identifier);
-      setOtpSent(true);
+      console.log('User registered:', { name, email, phone });
+      alert('Signup successful (demo)');
       setLoading(false);
-    }, 1000);
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    if (!otp) {
-      setError('Please enter OTP');
-      return;
-    }
-
-    setError('');
-    setLoading(true);
-
-    // Simulate OTP verification
-    setTimeout(() => {
-      console.log('OTP verified. Login successful');
-      setLoading(false);
-      alert('Login means success (demo)');
     }, 1000);
   };
 
@@ -85,7 +65,7 @@ export default function Login() {
           opacity: 0.9;
         }
 
-        .login-section {
+        .signup-section {
           flex: 1;
           display: flex;
           justify-content: center;
@@ -94,7 +74,7 @@ export default function Login() {
           padding: 20px;
         }
 
-        .login-card {
+        .signup-card {
           width: 100%;
           max-width: 420px;
           background: white;
@@ -103,13 +83,13 @@ export default function Login() {
           box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        .login-title {
+        .signup-title {
           font-size: 26px;
           font-weight: bold;
           margin-bottom: 8px;
         }
 
-        .login-subtitle {
+        .signup-subtitle {
           color: #666;
           font-size: 14px;
           margin-bottom: 24px;
@@ -148,7 +128,6 @@ export default function Login() {
           font-size: 16px;
           font-weight: 600;
           cursor: pointer;
-          margin-bottom: 10px;
         }
 
         .btn:disabled {
@@ -156,18 +135,17 @@ export default function Login() {
           cursor: not-allowed;
         }
 
-        .signup-link {
+        .login-link {
           width: 100%;
           text-align: center;
           margin-top: 12px;
+          font-size: 14px;
         }
 
-        .signup-link a {
+        .login-link a {
           color: #ff6b00;
           text-decoration: none;
           font-weight: 600;
-          display: inline-block;
-          margin: 0 auto;
         }
 
         @media (max-width: 768px) {
@@ -177,57 +155,56 @@ export default function Login() {
 
       <div className="app-container">
         <div className="branding-section">
-          <div className="brand-title">Welcome Back</div>
+          <div className="brand-title">Join Us</div>
           <div className="brand-subtitle">
-            Sign in with OTP for a fast and secure experience.
+            Create your account and start your journey with us.
           </div>
         </div>
 
-        <div className="login-section">
-          <div className="login-card">
-            <div className="login-title">OTP Login</div>
-            <div className="login-subtitle">
-              Enter your email or phone number
+        <div className="signup-section">
+          <div className="signup-card">
+            <div className="signup-title">Sign Up</div>
+            <div className="signup-subtitle">
+              Enter your details to create an account
             </div>
 
-            {!otpSent ? (
-              <form onSubmit={handleSendOtp}>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Email or phone number"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                  />
-                </div>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <input
+                  type="text"
+                  placeholder="Full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
 
-                {error && <div className="error-text">{error}</div>}
+              <div className="form-group">
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-                <button className="btn" disabled={loading}>
-                  {loading ? 'Sending OTP...' : 'Send OTP'}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleLogin}>
-                <div className="form-group">
-                  <input
-                    type="text"
-                    placeholder="Enter OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                  />
-                </div>
+              <div className="form-group">
+                <input
+                  type="tel"
+                  placeholder="Phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
 
-                {error && <div className="error-text">{error}</div>}
+              {error && <div className="error-text">{error}</div>}
 
-                <button className="btn" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Login'}
-                </button>
-              </form>
-            )}
+              <button className="btn" disabled={loading}>
+                {loading ? 'Creating account...' : 'Sign Up'}
+              </button>
+            </form>
 
-            <div className="signup-link">
-              New user? <a href="/signup">Sign up</a>
+            <div className="login-link">
+              Already have an account? <a href="/login">Login</a>
             </div>
           </div>
         </div>
