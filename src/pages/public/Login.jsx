@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+// Constants
+const OTP_TIMER_SECONDS = 10; // 2 minutes
+const MOCK_OTP = '123456'; // Mock OTP for testing
 
 // Country codes data
 const COUNTRY_CODES = [
@@ -18,6 +22,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function validateEmail(email) {
   const cleanEmail = email.trim().toLowerCase();
   
+  if (!cleanEmail) {
+    return { valid: false, error: "Email is required" };
+  }
+
   if (!EMAIL_REGEX.test(cleanEmail)) {
     return { valid: false, error: "Please enter a valid email address (e.g., name@example.com)" };
   }
@@ -30,6 +38,11 @@ function validateEmail(email) {
     return { valid: false, error: "Email cannot contain consecutive dots" };
   }
   
+  const [localPart, domain] = cleanEmail.split('@');
+  if (localPart.length < 1 || domain.length < 3) {
+    return { valid: false, error: "Invalid email format" };
+  }
+  
   return { valid: true, value: cleanEmail };
 }
 
@@ -37,6 +50,10 @@ function validatePhone(phone, countryCode) {
   // Remove all non-digit characters
   const cleaned = phone.replace(/\D/g, '');
   
+  if (!cleaned) {
+    return { valid: false, error: "Phone number is required" };
+  }
+
   // Find country config
   const countryConfig = COUNTRY_CODES.find(c => c.code === countryCode);
   if (!countryConfig) {
@@ -47,7 +64,7 @@ function validatePhone(phone, countryCode) {
   if (!countryConfig.pattern.test(cleaned)) {
     return { 
       valid: false, 
-      error: `Invalid ${countryConfig.country} phone number format` 
+      error: `Invalid ${countryConfig.country} phone number format. Expected: ${getPhoneFormat(countryCode)}` 
     };
   }
   
@@ -58,6 +75,20 @@ function validatePhone(phone, countryCode) {
     value: fullNumber,
     formatted: formatPhone(fullNumber, countryCode)
   };
+}
+
+function getPhoneFormat(countryCode) {
+  const formats = {
+    '+91': '10 digits (e.g., 98765 43210)',
+    '+230': '8 digits (e.g., 5123 4567)',
+    '+1': '10 digits (e.g., (555) 123-4567)',
+    '+44': '10 digits',
+    '+61': '9 digits (starting with 4-5)',
+    '+27': '9 digits',
+    '+971': '9 digits (starting with 5)',
+    '+65': '8 digits (starting with 8-9)'
+  };
+  return formats[countryCode] || '10 digits';
 }
 
 function formatPhone(phone, countryCode) {
@@ -99,12 +130,44 @@ export default function Login() {
   const [inputType, setInputType] = useState('phone'); // 'email' or 'phone'
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+230'); // Default to Mauritius
-  const [otp, setOtp] = useState('');
+  const [countryCode, setCountryCode] = useState('+91'); // Default to India
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validatedValue, setValidatedValue] = useState('');
+  const [timer, setTimer] = useState(OTP_TIMER_SECONDS);
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [verificationInProgress, setVerificationInProgress] = useState(false);
+  const otpInputRefs = useRef([]);
+
+  // Timer effect - counts down after OTP is sent
+  useEffect(() => {
+    if (!otpSent) return;
+
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          setIsTimerExpired(true);
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [otpSent]);
+
+  // Auto-verify when all 6 digits are entered
+  useEffect(() => {
+    if (!otpSent || verificationInProgress) return;
+
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length === 6 && fullOtp !== '') {
+      verifyOtp(fullOtp);
+    }
+  }, [otpDigits, otpSent, verificationInProgress]);
 
   const handleInputTypeChange = (type) => {
     setInputType(type);
@@ -113,18 +176,12 @@ export default function Login() {
 
   const validateInput = () => {
     if (inputType === 'email') {
-      if (!email.trim()) {
-        return { valid: false, error: 'Email is required' };
-      }
       const result = validateEmail(email);
       if (result.valid) {
         setValidatedValue(result.value);
       }
       return result;
     } else {
-      if (!phone.trim()) {
-        return { valid: false, error: 'Phone number is required' };
-      }
       const result = validatePhone(phone, countryCode);
       if (result.valid) {
         setValidatedValue(result.value);
@@ -147,57 +204,113 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    // Simulate API call to send OTP
-    try {
-      // In real implementation, call your API here:
-      // await fetch('/api/auth/send-otp', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ 
-      //     [inputType]: validatedValue,
-      //     type: 'login'
-      //   })
-      // });
-
-      setTimeout(() => {
-        console.log('OTP sent to:', validatedValue, 'via', inputType);
-        setOtpSent(true);
-        setLoading(false);
-      }, 1000);
-    } catch (err) {
-      setError('Failed to send OTP. Please try again.');
+    // Mock API call to send OTP
+    setTimeout(() => {
+      console.log('OTP sent to:', validatedValue, 'via', inputType);
+      console.log('Mock OTP for testing: ' + MOCK_OTP);
+      setOtpSent(true);
       setLoading(false);
+      setTimer(OTP_TIMER_SECONDS);
+      setIsTimerExpired(false);
+      setOtpDigits(['', '', '', '', '', '']);
+      // Focus on first OTP input
+      if (otpInputRefs.current[0]) {
+        otpInputRefs.current[0].focus();
+      }
+    }, 1000);
+  };
+
+  const handleOtpInputChange = (index, value) => {
+    // Only allow digits
+    if (!/^\d*$/.test(value)) return;
+
+    // Only allow single character
+    if (value.length > 1) return;
+
+    const newOtpDigits = [...otpDigits];
+    newOtpDigits[index] = value;
+    setOtpDigits(newOtpDigits);
+    setError('');
+
+    // Auto-focus to next input if digit is entered
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    if (!otp || otp.trim().length !== 6) {
-      setError('Please enter the 6-digit OTP');
-      return;
+  const handleOtpKeyDown = (index, e) => {
+    // Handle backspace to move to previous input
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
     }
 
-    setError('');
-    setLoading(true);
+    // Handle arrow keys for navigation
+    if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault();
+      otpInputRefs.current[index - 1]?.focus();
+    }
+    if (e.key === 'ArrowRight' && index < 5) {
+      e.preventDefault();
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
 
-    // Simulate API call to verify OTP
-    try {
-      setTimeout(() => {
+  const verifyOtp = async (otp) => {
+    setVerificationInProgress(true);
+    setError('');
+
+    // Mock API call to verify OTP
+    setTimeout(() => {
+      console.log('Verifying OTP:', otp);
+      
+      if (otp === MOCK_OTP) {
         console.log('OTP verified. Login successful');
-        setLoading(false);
-        alert('Login successful! (demo)');
-      }, 1000);
-    } catch (err) {
-      setError('Invalid OTP. Please try again.');
-      setLoading(false);
-    }
+        alert('Login successful! (Demo - Mock OTP: 123456)');
+        // Reset form
+        setOtpSent(false);
+        setEmail('');
+        setPhone('');
+        setOtpDigits(['', '', '', '', '', '']);
+      } else {
+        setError('Invalid OTP. Please try again.');
+        setOtpDigits(['', '', '', '', '', '']);
+        otpInputRefs.current[0]?.focus();
+      }
+      
+      setVerificationInProgress(false);
+    }, 1500);
   };
 
-  const handleResendOtp = () => {
-    setOtpSent(false);
-    setOtp('');
+  const handleResendOtp = async () => {
+    setLoading(true);
     setError('');
+
+    // Mock API call to resend OTP
+    setTimeout(() => {
+      console.log('OTP resent to:', validatedValue);
+      console.log('Mock OTP for testing: ' + MOCK_OTP);
+      setTimer(OTP_TIMER_SECONDS);
+      setIsTimerExpired(false);
+      setOtpDigits(['', '', '', '', '', '']);
+      setLoading(false);
+      if (otpInputRefs.current[0]) {
+        otpInputRefs.current[0].focus();
+      }
+    }, 1000);
+  };
+
+  const handleChangeIdentifier = () => {
+    setOtpSent(false);
+    setOtpDigits(['', '', '', '', '', '']);
+    setError('');
+    setTimer(OTP_TIMER_SECONDS);
+    setIsTimerExpired(false);
+  };
+
+  const formatTimer = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const selectedCountry = COUNTRY_CODES.find(c => c.code === countryCode);
@@ -269,6 +382,7 @@ export default function Login() {
           color: #666;
           font-size: 14px;
           margin-bottom: 24px;
+          line-height: 1.4;
         }
 
         .input-type-toggle {
@@ -324,12 +438,21 @@ export default function Login() {
           border: 1px solid #ddd;
           font-size: 14px;
           background: white;
+          color: #333;
           cursor: pointer;
+          transition: border-color 0.3s, box-shadow 0.3s;
         }
 
         .country-select:focus {
           outline: none;
           border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+        }
+
+        .country-select option {
+          background: white;
+          color: #333;
+          padding: 8px;
         }
 
         .form-group input {
@@ -339,6 +462,8 @@ export default function Login() {
           border: 1px solid #ddd;
           font-size: 14px;
           transition: border-color 0.3s;
+          background: white;
+          color: #333;
         }
 
         .phone-input-wrapper input {
@@ -348,16 +473,84 @@ export default function Login() {
         .form-group input:focus {
           outline: none;
           border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
         }
 
         .form-group input.error {
           border-color: #e11d48;
         }
 
+        .form-group input::placeholder {
+          color: #999;
+        }
+
         .help-text {
           font-size: 12px;
           color: #666;
           margin-top: 4px;
+        }
+
+        .otp-group {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 18px;
+          justify-content: center;
+        }
+
+        .otp-input {
+          width: 50px;
+          height: 50px;
+          padding: 0;
+          text-align: center;
+          font-size: 24px;
+          font-weight: 600;
+          border: 2px solid #ddd;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+          background: white;
+          color: #333;
+        }
+
+        .otp-input:focus {
+          outline: none;
+          border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+        }
+
+        .otp-input.filled {
+          border-color: #ff6b00;
+          background: #fff5f0;
+        }
+
+        .otp-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .timer-container {
+          text-align: center;
+          margin-bottom: 18px;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .timer-text {
+          font-weight: 600;
+          color: #ff6b00;
+          font-size: 16px;
+        }
+
+        .timer-expired {
+          color: #e11d48;
+          font-weight: 600;
+        }
+
+        .verification-status {
+          color: #ff6b00;
+          font-size: 14px;
+          margin-bottom: 12px;
+          text-align: center;
+          font-weight: 500;
         }
 
         .error-text {
@@ -402,6 +595,17 @@ export default function Login() {
           background: #fff5f0;
         }
 
+        .verified-info {
+          background: #f0f9ff;
+          border: 1px solid #bae6fd;
+          padding: 12px;
+          border-radius: 8px;
+          margin-bottom: 16px;
+          font-size: 14px;
+          color: #0369a1;
+          word-break: break-all;
+        }
+
         .signup-link {
           width: 100%;
           text-align: center;
@@ -416,16 +620,6 @@ export default function Login() {
           margin: 0 auto;
         }
 
-        .verified-info {
-          background: #f0f9ff;
-          border: 1px solid #bae6fd;
-          padding: 12px;
-          border-radius: 8px;
-          margin-bottom: 16px;
-          font-size: 14px;
-          color: #0369a1;
-        }
-
         @media (max-width: 768px) {
           .branding-section { display: none; }
           
@@ -437,6 +631,12 @@ export default function Login() {
             width: 110px;
             padding: 14px 6px;
             font-size: 13px;
+          }
+
+          .otp-input {
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
           }
         }
       `}</style>
@@ -455,7 +655,7 @@ export default function Login() {
             <div className="login-subtitle">
               {!otpSent 
                 ? 'Choose your login method below' 
-                : 'Enter the OTP sent to your ' + inputType
+                : 'Enter the 6-digit OTP sent to your ' + inputType
               }
             </div>
 
@@ -519,8 +719,8 @@ export default function Login() {
                         id="phone"
                         type="tel"
                         placeholder={
-                          countryCode === '+230' ? '5123 4567' :
-                          countryCode === '+91' ? '98765 43210' :
+                          countryCode ===  '+91' ? '98765 43210' :
+                          countryCode ===  '+230' ? '5123 4567':
                           '123 456 7890'
                         }
                         value={phone}
@@ -556,27 +756,35 @@ export default function Login() {
                   </strong>
                 </div>
 
-                <form onSubmit={handleLogin}>
+                <form onSubmit={(e) => e.preventDefault()}>
                   <div className="form-group">
-                    <label htmlFor="otp">Enter 6-Digit OTP</label>
-                    <input
-                      id="otp"
-                      type="text"
-                      placeholder="000000"
-                      value={otp}
-                      onChange={(e) => {
-                        // Only allow digits and limit to 6 characters
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                        setOtp(value);
-                        setError('');
-                      }}
-                      maxLength="6"
-                      className={error ? 'error' : ''}
-                      autoComplete="one-time-code"
-                    />
-                    <div className="help-text">
-                      Check your {inputType === 'email' ? 'email inbox' : 'WhatsApp/SMS'}
+                    <label>Enter 6-Digit OTP</label>
+                    <div className="otp-group">
+                      {otpDigits.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => (otpInputRefs.current[index] = el)}
+                          type="text"
+                          maxLength="1"
+                          inputMode="numeric"
+                          className={`otp-input ${digit ? 'filled' : ''}`}
+                          value={digit}
+                          onChange={(e) => handleOtpInputChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          disabled={verificationInProgress}
+                        />
+                      ))}
                     </div>
+                  </div>
+
+                  <div className="timer-container">
+                    {!isTimerExpired ? (
+                      <>
+                        OTP expires in: <span className="timer-text">{formatTimer(timer)}</span>
+                      </>
+                    ) : (
+                      <span className="timer-expired">OTP has expired</span>
+                    )}
                   </div>
 
                   {error && (
@@ -585,14 +793,37 @@ export default function Login() {
                     </div>
                   )}
 
-                  <button className="btn" type="submit" disabled={loading || otp.length !== 6}>
-                    {loading ? 'Verifying...' : 'Login'}
-                  </button>
+                  {verificationInProgress && (
+                    <div className="verification-status">
+                      ⏳ Verifying OTP...
+                    </div>
+                  )}
+
+                  {isTimerExpired && (
+                    <button
+                      className="btn btn-secondary"
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading}
+                    >
+                      {loading ? 'Resending OTP...' : 'Resend OTP'}
+                    </button>
+                  )}
+
+                  {!isTimerExpired && (
+                    <button 
+                      className="btn" 
+                      type="button"
+                      disabled={loading || verificationInProgress}
+                    >
+                      {verificationInProgress ? 'Verifying OTP...' : `Verify OTP (${otpDigits.filter(d => d).length}/6)`}
+                    </button>
+                  )}
 
                   <button 
                     className="btn btn-secondary" 
                     type="button" 
-                    onClick={handleResendOtp}
+                    onClick={handleChangeIdentifier}
                     disabled={loading}
                   >
                     Change {inputType === 'email' ? 'Email' : 'Phone Number'}
