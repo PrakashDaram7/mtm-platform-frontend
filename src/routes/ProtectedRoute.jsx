@@ -1,40 +1,49 @@
 /**
  * ProtectedRoute.jsx
  * 
- * Wrapper component that protects routes requiring authentication.
- * Currently uses a hardcoded isAuthenticated variable.
- * 
- * Students: This demonstrates route protection structure.
- * In production, isAuthenticated would come from context or state,
- * checking if a valid token exists in storage.
+ * Wrapper component that protects routes requiring authentication and handles role-based access.
  */
 
 import { Navigate } from 'react-router-dom';
+import { storage } from '../utils/storage';
 
 /**
  * ProtectedRoute component
  * 
  * @param {object} props - Route props
  * @param {React.Component} props.component - Component to render if authenticated
- * @returns {React.Component} - Either the protected component or redirect to login
- * 
- * TODO: Replace hardcoded isAuthenticated with real auth check
- * TODO: Check for valid token in localStorage
- * TODO: Add loading state while checking authentication
- * TODO: Add logic to refresh token if expired
+ * @param {string} props.requiredRole - Required role (optional)
+ * @returns {React.Component} - Protected component or redirect
  */
-export default function ProtectedRoute({ component: Component, ...rest }) {
-  // HARDCODED for learning purposes - replace with real auth logic
-  const isAuthenticated = false;
+export default function ProtectedRoute({ 
+  component: Component, 
+  requiredRole = null,
+  ...rest 
+}) {
+  // Check if user has valid token
+  const accessToken = storage.getAccessToken();
+  const userRole = storage.getUserRole();
 
-  // TODO: Real implementation would be:
-  // const token = getFromStorage(STORAGE_KEYS.AUTH_TOKEN);
-  // const isAuthenticated = !!token && isTokenValid(token);
-
-  if (!isAuthenticated) {
-    console.log('User not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
+  // Not authenticated - redirect to signin
+  if (!accessToken) {
+    console.log('No access token found, redirecting to signin');
+    return <Navigate to="/auth/signin" replace />;
   }
 
+  // Authenticated but required role check failed
+  if (requiredRole && userRole !== requiredRole) {
+    console.log(`User role '${userRole}' does not match required role '${requiredRole}'`);
+    
+    // Redirect to appropriate dashboard based on actual role
+    if (userRole === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (userRole === 'member') {
+      return <Navigate to="/member/dashboard" replace />;
+    }
+    
+    return <Navigate to="/auth/signin" replace />;
+  }
+
+  // All checks passed - render component
   return <Component {...rest} />;
 }

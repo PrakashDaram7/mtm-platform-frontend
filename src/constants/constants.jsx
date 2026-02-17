@@ -8,7 +8,7 @@
  */
 
 // Backend base URL - change this when connecting to real backend
-export const BACKEND_BASE_URL = 'http://localhost:8000/api';
+export const BACKEND_BASE_URL = 'http://192.168.0.231:8000/api';
 
 /**
  * Authentication API endpoints
@@ -16,7 +16,9 @@ export const BACKEND_BASE_URL = 'http://localhost:8000/api';
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
-  // TODO: Add REFRESH_TOKEN, REGISTER, FORGOT_PASSWORD when needed
+  SEND_OTP: '/auth/send-otp',
+  VERIFY_OTP: '/auth/verify-otp',
+  RESEND_OTP: '/auth/resend-otp',
 };
 
 /**

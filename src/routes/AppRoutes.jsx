@@ -11,27 +11,32 @@
  */
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from '../pages/public/Home.jsx';
-import Login from '../pages/public/Login.jsx';
+import LandingPage from '../pages/public/LandingPage.jsx';
+import SignIn from '../pages/public/SignIn.jsx';
+import SignUp from '../pages/public/SignUp.jsx';
 import NotFound from '../pages/public/NotFound.jsx';
-import Dashboard from '../pages/protected/Dashboard.jsx';
+import AdminDashboard from '../pages/protected/AdminDashboard.jsx';
+import MemberDashboard from '../pages/protected/MemberDashboard.jsx';
 import Profile from '../pages/protected/Profile.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
-import SignUp from '../pages/public/signup.jsx';
 
 export default function AppRoutes() {
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/auth/signin" element={<SignIn />} />
+        <Route path="/auth/signup" element={<SignUp />} />
 
         {/* Protected Routes */}
         <Route 
-          path="/dashboard" 
-          element={<ProtectedRoute component={Dashboard} />} 
+          path="/admin/dashboard" 
+          element={<ProtectedRoute component={AdminDashboard} requiredRole="admin" />} 
+        />
+        <Route 
+          path="/member/dashboard" 
+          element={<ProtectedRoute component={MemberDashboard} requiredRole="member" />} 
         />
         <Route 
           path="/profile" 

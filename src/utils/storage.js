@@ -69,3 +69,55 @@ export const clearStorage = () => {
 };
 
 // TODO: Add sessionStorage functions if needed
+
+// Named export containing storage utility methods
+export const storage = {
+  // Token management
+  setAccessToken: (token) => {
+    localStorage.setItem('accessToken', token);
+  },
+  
+  getAccessToken: () => {
+    return localStorage.getItem('accessToken');
+  },
+  
+  setRefreshToken: (token) => {
+    localStorage.setItem('refreshToken', token);
+  },
+  
+  getRefreshToken: () => {
+    return localStorage.getItem('refreshToken');
+  },
+  
+  // User role management
+  setUserRole: (role) => {
+    localStorage.setItem('userRole', role);
+  },
+  
+  getUserRole: () => {
+    return localStorage.getItem('userRole');
+  },
+  
+  // User data management
+  setUserData: (userData) => {
+    localStorage.setItem('userData', JSON.stringify(userData));
+  },
+  
+  getUserData: () => {
+    const data = localStorage.getItem('userData');
+    return data ? JSON.parse(data) : null;
+  },
+  
+  // Clear all tokens and auth data
+  clearTokens: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userData');
+  },
+  
+  // Check if user is authenticated
+  isAuthenticated: () => {
+    return !!localStorage.getItem('accessToken');
+  }
+};

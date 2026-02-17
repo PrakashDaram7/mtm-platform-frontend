@@ -48,6 +48,50 @@ export const logoutUser = async () => {
   }
 };
 
-// TODO: Add more auth functions as needed
-// export const registerUser = async (userData) => { ... };
-// export const refreshToken = async () => { ... };
+/**
+ * Send OTP to email or phone
+ * 
+ * @param {object} payload - { email: string } or { phone: string, country_code: string }
+ * @returns {Promise} - OTP expiry time and identifier
+ */
+export const sendOTP = async (payload) => {
+  try {
+    const response = await apiClient.post(AUTH_ENDPOINTS.SEND_OTP, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verify OTP and get authentication tokens
+ * 
+ * @param {object} payload - { identifier: string, otp: string }
+ * @returns {Promise} - User data and JWT tokens
+ */
+export const verifyOTP = async (payload) => {
+  try {
+    const response = await apiClient.post(AUTH_ENDPOINTS.VERIFY_OTP, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Resend OTP
+ * 
+ * @param {object} payload - { identifier: string }
+ * @returns {Promise} - New OTP expiry time
+ */
+export const resendOTP = async (payload) => {
+  try {
+    const response = await apiClient.post(AUTH_ENDPOINTS.RESEND_OTP, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    throw error;
+  }
+};
