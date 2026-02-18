@@ -66,3 +66,54 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* SweetAlert2 Custom Styling */
+.swal-popup-sm {
+  width: 360px !important;
+  padding: 1.5rem !important;
+  font-size: 0.95rem !important;
+}
+
+.swal-title-sm {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.swal-text-sm {
+  font-size: 0.9rem !important;
+  color: #666 !important;
+  line-height: 1.4 !important;
+}
+
+/* SweetAlert2 Success Container */
+.swal2-popup.swal2-show {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  animation: slideInUp 0.3s ease-out !important;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* SweetAlert2 Button Styling */
+.swal2-confirm {
+  padding: 0.6rem 1.5rem !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+}
+
+/* SweetAlert2 Icon Styling */
+.swal2-icon {
+  width: 60px !important;
+  height: 60px !important;
+}

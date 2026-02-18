@@ -13,17 +13,37 @@ import Swal from 'sweetalert2';
  * @param {string} title - Alert title
  * @param {string} message - Alert message (optional)
  * @param {function} onConfirm - Callback when confirmed (optional)
+ * @param {number} timer - Auto-close timer in milliseconds (default: 2000)
  */
-export const showSuccessAlert = (title, message = '', onConfirm = null) => {
+export const showSuccessAlert = (title, message = '', onConfirm = null, timer = 2000) => {
   Swal.fire({
     icon: 'success',
     title: title,
     text: message,
     confirmButtonColor: '#667eea',
     confirmButtonText: 'OK',
+    width: '360px',
+    padding: '1.5rem',
+    customClass: {
+      popup: 'swal-popup-sm',
+      title: 'swal-title-sm',
+      htmlContainer: 'swal-text-sm'
+    },
+    timer: timer,
+    timerProgressBar: false,
+    didOpen: () => {
+      const popup = Swal.getPopup();
+      if (popup) {
+        popup.style.borderRadius = '12px';
+        popup.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      }
+    }
   }).then((result) => {
-    if (result.isConfirmed && onConfirm) {
+    if ((result.isConfirmed || result.dismiss === Swal.DismissReason.timer) && onConfirm) {
       onConfirm();
+    } else if (!result.isConfirmed && !onConfirm) {
+      // Auto-close without callback
+      return;
     }
   });
 };
@@ -42,6 +62,20 @@ export const showErrorAlert = (title, message = '', onConfirm = null) => {
     text: message,
     confirmButtonColor: '#667eea',
     confirmButtonText: 'OK',
+    width: '360px',
+    padding: '1.5rem',
+    customClass: {
+      popup: 'swal-popup-sm',
+      title: 'swal-title-sm',
+      htmlContainer: 'swal-text-sm'
+    },
+    didOpen: () => {
+      const popup = Swal.getPopup();
+      if (popup) {
+        popup.style.borderRadius = '12px';
+        popup.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+      }
+    }
   }).then((result) => {
     if (result.isConfirmed && onConfirm) {
       onConfirm();
@@ -141,11 +175,12 @@ export const hideLoader = () => {
  * @param {string} title - Alert title
  * @param {string} message - Alert message (optional)
  * @param {function} onConfirm - Callback when confirmed (optional)
+ * @param {number} autoCloseTimer - Auto-close timer in milliseconds for success alerts (default: 2000)
  */
-export const showAlert = (type = 'info', title, message = '', onConfirm = null) => {
+export const showAlert = (type = 'info', title, message = '', onConfirm = null, autoCloseTimer = 2000) => {
   switch (type) {
     case 'success':
-      return showSuccessAlert(title, message, onConfirm);
+      return showSuccessAlert(title, message, onConfirm, autoCloseTimer);
     case 'error':
       return showErrorAlert(title, message, onConfirm);
     case 'warning':

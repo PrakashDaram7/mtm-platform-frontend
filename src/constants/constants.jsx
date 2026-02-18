@@ -17,6 +17,7 @@ export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
   SEND_OTP: '/auth/send-otp',
+  SIGNUP_SEND_OTP: '/auth/signup-send-otp',
   VERIFY_OTP: '/auth/verify-otp',
   RESEND_OTP: '/auth/resend-otp',
 };

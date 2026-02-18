@@ -366,16 +366,16 @@ const handleSendOtp = async (e) => {
       
       if (response.success) {
         // Store tokens in localStorage
-        storage.setAccessToken(response.data.access_token);
-        storage.setRefreshToken(response.data.refresh_token);
-        storage.setUserRole(response.data.user.role);
+        storage.setAccessToken(response.access_token);
+        storage.setRefreshToken(response.refresh_token);
+        storage.setUserRole(response.role || 'user');
         
         const successMsg = isSignupMode ? 'Account Created Successfully!' : 'Login Successful!';
         const welcomeMsg = isSignupMode ? 'Welcome to MTM Platform!' : 'Welcome back!';
         
         showAlert('success', successMsg, welcomeMsg, () => {
           // Redirect based on role
-          const userRole = response.data.user.role;
+          const userRole = response.role;
           if (userRole === 'admin') {
             navigate('/admin/dashboard');
           } else if (userRole === 'member') {
