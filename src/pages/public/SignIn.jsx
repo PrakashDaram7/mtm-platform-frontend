@@ -24,7 +24,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validateEmail(email) {
   const cleanEmail = email.trim().toLowerCase();
-  
+
   if (!cleanEmail) {
     return { valid: false, error: "Email is required" };
   }
@@ -32,49 +32,46 @@ function validateEmail(email) {
   if (!EMAIL_REGEX.test(cleanEmail)) {
     return { valid: false, error: "Please enter a valid email address (e.g., name@example.com)" };
   }
-  
+
   if (cleanEmail.length < 3 || cleanEmail.length > 254) {
     return { valid: false, error: "Email length must be between 3-254 characters" };
   }
-  
+
   if (cleanEmail.includes('..')) {
     return { valid: false, error: "Email cannot contain consecutive dots" };
   }
-  
+
   const [localPart, domain] = cleanEmail.split('@');
   if (localPart.length < 1 || domain.length < 3) {
     return { valid: false, error: "Invalid email format" };
   }
-  
+
   return { valid: true, value: cleanEmail };
 }
 
 function validatePhone(phone, countryCode) {
-  // Remove all non-digit characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   if (!cleaned) {
     return { valid: false, error: "Phone number is required" };
   }
 
-  // Find country config
   const countryConfig = COUNTRY_CODES.find(c => c.code === countryCode);
   if (!countryConfig) {
     return { valid: false, error: "Invalid country code" };
   }
-  
-  // Validate against country pattern
+
   if (!countryConfig.pattern.test(cleaned)) {
-    return { 
-      valid: false, 
-      error: `Invalid ${countryConfig.country} phone number format. Expected: ${getPhoneFormat(countryCode)}` 
+    return {
+      valid: false,
+      error: `Invalid ${countryConfig.country} phone number format. Expected: ${getPhoneFormat(countryCode)}`
     };
   }
-  
+
   const fullNumber = countryCode + cleaned;
-  
-  return { 
-    valid: true, 
+
+  return {
+    valid: true,
     value: fullNumber,
     formatted: formatPhone(fullNumber, countryCode)
   };
@@ -95,10 +92,8 @@ function getPhoneFormat(countryCode) {
 }
 
 function formatPhone(phone, countryCode) {
-  // Remove country code for formatting
   const number = phone.replace(countryCode, '');
-  
-  // Format based on country
+
   if (countryCode === '+230' && number.length === 8) {
     return `${countryCode} ${number.slice(0, 4)} ${number.slice(4)}`;
   } else if (countryCode === '+91' && number.length === 10) {
@@ -106,17 +101,16 @@ function formatPhone(phone, countryCode) {
   } else if (countryCode === '+1' && number.length === 10) {
     return `${countryCode} (${number.slice(0, 3)}) ${number.slice(3, 6)}-${number.slice(6)}`;
   }
-  
-  // Default formatting
+
   return `${countryCode} ${number}`;
 }
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const [inputType, setInputType] = useState('phone'); // 'email' or 'phone'
+  const [inputType, setInputType] = useState('phone');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+91'); // Default to India
+  const [countryCode, setCountryCode] = useState('+91');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -125,13 +119,13 @@ export default function SignIn() {
   const [timer, setTimer] = useState(OTP_TIMER_SECONDS);
   const [isTimerExpired, setIsTimerExpired] = useState(false);
   const [verificationInProgress, setVerificationInProgress] = useState(false);
-  const [isSignupMode, setIsSignupMode] = useState(false); // Toggle between signin and signup
+  const [isSignupMode, setIsSignupMode] = useState(false);
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const otpInputRefs = useRef([]);
 
-  // Timer effect - counts down after OTP is sent
+  // Timer countdown
   useEffect(() => {
     if (!otpSent) return;
 
@@ -149,16 +143,6 @@ export default function SignIn() {
     return () => clearInterval(interval);
   }, [otpSent]);
 
-  // Auto-verify when all 6 digits are entered
-  useEffect(() => {
-    if (!otpSent || verificationInProgress) return;
-
-    const fullOtp = otpDigits.join('');
-    if (fullOtp.length === 6 && fullOtp !== '') {
-      verifyOtpHandler(fullOtp);
-    }
-  }, [otpDigits, otpSent, verificationInProgress]);
-
   const isInputValid = () => {
     if (inputType === 'email') {
       return email && email.trim().length > 0;
@@ -170,28 +154,25 @@ export default function SignIn() {
   const handleInputTypeChange = (type) => {
     setInputType(type);
     setError('');
-    // Clear validated value when switching input type
     setValidatedValue('');
   };
 
   const validateInput = () => {
     if (inputType === 'email') {
-      // First check if email is empty
       if (!email || email.trim() === '') {
         return { valid: false, error: "Please enter your email address" };
       }
-      
+
       const result = validateEmail(email);
       if (result.valid) {
         setValidatedValue(result.value);
       }
       return result;
     } else {
-      // First check if phone is empty
       if (!phone || phone.trim() === '') {
         return { valid: false, error: "Please enter your phone number" };
       }
-      
+
       const result = validatePhone(phone, countryCode);
       if (result.valid) {
         setValidatedValue(result.value);
@@ -200,96 +181,82 @@ export default function SignIn() {
     }
   };
 
-const handleSendOtp = async (e) => {
-  e.preventDefault();
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
 
-  // Validate input
-  const validation = validateInput();
+    const validation = validateInput();
 
-  if (!validation.valid) {
-    setError(validation.error);
-    return;
-  }
-
-  // Get the correct validated value directly
-  const identifierValue = validation.value;
-
-  // Store it in state for later use (OTP verification, resend, etc.)
-  setValidatedValue(identifierValue);
-
-  setError('');
-  showLoader('Sending OTP', 'Please wait...');
-
-  try {
-    let payload = {};
-
-    if (inputType === 'email') {
-      // ✅ FIX: use identifierValue instead of validatedValue
-      payload = { email: identifierValue };
-    } else {
-      // ✅ FIX: use identifierValue instead of validatedValue
-      const digits = identifierValue.replace(/\D/g, '');
-      payload = {
-        phone: digits,
-        country_code: countryCode
-      };
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
     }
 
-    console.log("Sending OTP payload:", payload); // Debug log
+    const identifierValue = validation.value;
+    setValidatedValue(identifierValue);
 
-    const response = await sendOTP(payload);
+    setError('');
+    showLoader('Sending OTP', 'Please wait...');
 
-    hideLoader();
+    try {
+      let payload = {};
 
-    if (response.success) {
-      showAlert(
-        'success',
-        'OTP Sent!',
-        `OTP has been sent to ${identifierValue}`
-      );
-
-      setOtpSent(true);
-      setTimer(OTP_TIMER_SECONDS);
-      setIsTimerExpired(false);
-      setOtpDigits(['', '', '', '', '', '']);
-
-      // Focus first OTP input
-      if (otpInputRefs.current[0]) {
-        otpInputRefs.current[0].focus();
+      if (inputType === 'email') {
+        payload = { email: identifierValue };
+      } else {
+        const digits = identifierValue.replace(/\D/g, '');
+        payload = {
+          phone: digits,
+          country_code: countryCode
+        };
       }
 
-    } else {
-      showAlert(
-        'error',
-        'Error',
-        response.message || 'Failed to send OTP. Please try again.'
-      );
+      console.log("Sending OTP payload:", payload);
+
+      const response = await sendOTP(payload);
+
+      hideLoader();
+
+      if (response.success) {
+        showAlert(
+          'success',
+          'OTP Sent!',
+          `OTP has been sent to ${identifierValue}`
+        );
+
+        setOtpSent(true);
+        setTimer(OTP_TIMER_SECONDS);
+        setIsTimerExpired(false);
+        setOtpDigits(['', '', '', '', '', '']);
+
+        if (otpInputRefs.current[0]) {
+          otpInputRefs.current[0].focus();
+        }
+
+      } else {
+        showAlert(
+          'error',
+          'Error',
+          response.message || 'Failed to send OTP. Please try again.'
+        );
+      }
+
+    } catch (err) {
+      hideLoader();
+
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Failed to send OTP. Please try again.';
+
+      setError(errorMsg);
+      showAlert('error', 'Error', errorMsg);
+      console.error('Send OTP error:', err);
     }
-
-  } catch (err) {
-
-    hideLoader();
-
-    const errorMsg =
-      err.response?.data?.message ||
-      err.response?.data?.detail ||
-      err.message ||
-      'Failed to send OTP. Please try again.';
-
-    setError(errorMsg);
-
-    showAlert('error', 'Error', errorMsg);
-
-    console.error('Send OTP error:', err);
-  }
-};
-
+  };
 
   const handleOtpInputChange = (index, value) => {
-    // Only allow digits
     if (!/^\d*$/.test(value)) return;
-
-    // Only allow single character
     if (value.length > 1) return;
 
     const newOtpDigits = [...otpDigits];
@@ -297,19 +264,16 @@ const handleSendOtp = async (e) => {
     setOtpDigits(newOtpDigits);
     setError('');
 
-    // Auto-focus to next input if digit is entered
     if (value && index < 5) {
       otpInputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    // Handle backspace to move to previous input
     if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus();
     }
 
-    // Handle arrow keys for navigation
     if (e.key === 'ArrowLeft' && index > 0) {
       e.preventDefault();
       otpInputRefs.current[index - 1]?.focus();
@@ -320,8 +284,12 @@ const handleSendOtp = async (e) => {
     }
   };
 
-  const verifyOtpHandler = async (otp) => {
-    // For signup mode, validate required fields
+  const verifyOtpHandler = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
+
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length !== 6) return;
+
     if (isSignupMode) {
       if (!fullName.trim()) {
         setError('Full name is required for signup');
@@ -340,22 +308,21 @@ const handleSendOtp = async (e) => {
       }
     }
 
+    setVerificationInProgress(true);
     showLoader(isSignupMode ? 'Creating Account' : 'Verifying OTP', 'Please wait...');
     setError('');
 
     try {
-      // Build payload with correct field names for backend
       let payload = {
-        otp: otp
+        otp: fullOtp
       };
-      
+
       if (inputType === 'email') {
         payload.email = validatedValue;
       } else {
         payload.phone = validatedValue;
       }
 
-      // Add signup fields if in signup mode
       if (isSignupMode) {
         payload.full_name = fullName;
         payload.password = password;
@@ -363,26 +330,28 @@ const handleSendOtp = async (e) => {
 
       const response = await verifyOTP(payload);
       hideLoader();
-      
+
       if (response.success) {
-        // Store tokens in localStorage
         storage.setAccessToken(response.access_token);
         storage.setRefreshToken(response.refresh_token);
         storage.setUserRole(response.role || 'user');
-        
+        if (response.user) {
+          storage.setUserData(response.user);
+        }
+
         const successMsg = isSignupMode ? 'Account Created Successfully!' : 'Login Successful!';
         const welcomeMsg = isSignupMode ? 'Welcome to MTM Platform!' : 'Welcome back!';
-        
+
         showAlert('success', successMsg, welcomeMsg, () => {
-          // Redirect based on role
-          const userRole = response.role;
-          if (userRole === 'admin') {
-            navigate('/admin/dashboard');
-          } else if (userRole === 'member') {
-            navigate('/member/dashboard');
-          } else {
-            navigate('/member/dashboard');
-          }
+          const userRole = response.role || 'user';
+          const dashboardMap = {
+            admin: '/admin/dashboard',
+            moderator: '/moderator/dashboard',
+            organizer: '/organizer/dashboard',
+            member: '/member/dashboard',
+            user: '/user/dashboard',
+          };
+          navigate(dashboardMap[userRole] || '/user/dashboard');
         });
       } else {
         showAlert('error', 'Invalid OTP', response.message || 'Invalid OTP. Please try again.');
@@ -397,6 +366,8 @@ const handleSendOtp = async (e) => {
       setOtpDigits(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();
       console.error('Verify OTP error:', err);
+    } finally {
+      setVerificationInProgress(false);
     }
   };
 
@@ -405,17 +376,16 @@ const handleSendOtp = async (e) => {
     setError('');
 
     try {
-      // Build payload with correct field names for backend
       let payload = {};
       if (inputType === 'email') {
         payload.email = validatedValue;
       } else {
         payload.phone = validatedValue;
       }
-      
+
       const response = await resendOTP(payload);
       hideLoader();
-      
+
       if (response.success) {
         showAlert('success', 'OTP Resent!', `New OTP has been sent to ${validatedValue}`);
         setTimer(OTP_TIMER_SECONDS);
@@ -855,9 +825,9 @@ const handleSendOtp = async (e) => {
                   </div>
                 )}
 
-                <button 
-                  className="btn" 
-                  type="submit" 
+                <button
+                  className="btn"
+                  type="submit"
                   disabled={!isInputValid() || loading}
                 >
                   {loading ? 'Sending OTP...' : 'Send OTP'}
@@ -871,7 +841,7 @@ const handleSendOtp = async (e) => {
                   </strong>
                 </div>
 
-                <form onSubmit={(e) => e.preventDefault()}>
+                <form onSubmit={verifyOtpHandler}>
                   <div className="form-group">
                     <label>Enter 6-Digit OTP</label>
                     <div className="otp-group">
@@ -882,6 +852,7 @@ const handleSendOtp = async (e) => {
                           type="text"
                           maxLength="1"
                           inputMode="numeric"
+                          pattern="[0-9]*"
                           className={`otp-input ${digit ? 'filled' : ''}`}
                           value={digit}
                           onChange={(e) => handleOtpInputChange(index, e.target.value)}
@@ -914,32 +885,32 @@ const handleSendOtp = async (e) => {
                     </div>
                   )}
 
+                  <button
+                    className="btn"
+                    type="submit"
+                    disabled={verificationInProgress || loading || otpDigits.join('').length !== 6}
+                  >
+                    {verificationInProgress
+                      ? 'Verifying OTP...'
+                      : 'Verify OTP'}
+                  </button>
+
                   {isTimerExpired && (
                     <button
                       className="btn btn-secondary"
                       type="button"
                       onClick={handleResendOtp}
-                      disabled={loading}
+                      disabled={loading || verificationInProgress}
                     >
                       {loading ? 'Resending OTP...' : 'Resend OTP'}
                     </button>
                   )}
 
-                  {!isTimerExpired && (
-                    <button 
-                      className="btn" 
-                      type="button"
-                      disabled={loading || verificationInProgress}
-                    >
-                      {verificationInProgress ? 'Verifying OTP...' : `Verify OTP (${otpDigits.filter(d => d).length}/6)`}
-                    </button>
-                  )}
-
-                  <button 
-                    className="btn btn-secondary" 
-                    type="button" 
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
                     onClick={handleChangeIdentifier}
-                    disabled={loading}
+                    disabled={loading || verificationInProgress}
                   >
                     Change {inputType === 'email' ? 'Email' : 'Phone Number'}
                   </button>
