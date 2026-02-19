@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import {
   getDashboardAnalytics,
@@ -18,6 +18,33 @@ import { showAlert, showConfirmDialog, showLoader, hideLoader } from '../../util
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine which section to show based on URL
+  const path = location.pathname;
+  const activePage = path.includes('/admin/users') ? 'users'
+    : path.includes('/admin/roles') ? 'roles'
+      : path.includes('/admin/permissions') ? 'permissions'
+        : path.includes('/admin/events') ? 'events'
+          : path.includes('/admin/analytics') ? 'analytics'
+            : path.includes('/admin/settings') ? 'settings'
+              : path.includes('/admin/logs') ? 'logs'
+                : path.includes('/admin/announcements') ? 'announcements'
+                  : path.includes('/admin/payments') ? 'payments'
+                    : 'dashboard';
+
+  const PAGE_TITLES = {
+    dashboard: ['Admin Dashboard', 'Manage users and monitor platform analytics'],
+    users: ['User Management', 'View and manage all platform users'],
+    roles: ['Role Management', 'Configure roles and permissions'],
+    permissions: ['Permissions', 'Manage access controls'],
+    events: ['Events Management', 'View and manage all events'],
+    analytics: ['Analytics', 'Platform usage and performance metrics'],
+    settings: ['Settings', 'Configure platform settings'],
+    logs: ['Audit Logs', 'View system activity logs'],
+    announcements: ['Announcements', 'Manage platform announcements'],
+    payments: ['Payments', 'View payment transactions'],
+  };
   const [analytics, setAnalytics] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -246,7 +273,7 @@ const AdminDashboard = () => {
 
   if (loading && !users.length) {
     return (
-      <Layout pageTitle="Admin Dashboard" pageSubtitle="Manage users and monitor platform analytics">
+      <Layout pageTitle={PAGE_TITLES[activePage]?.[0] || 'Admin Dashboard'} pageSubtitle={PAGE_TITLES[activePage]?.[1] || ''}>
         <div className="page-loader">
           <div className="spinner"></div>
           <span className="loading-text">Loading dashboard...</span>
@@ -256,322 +283,342 @@ const AdminDashboard = () => {
   }
 
   return (
-    <Layout pageTitle="Admin Dashboard" pageSubtitle="Manage users and monitor platform analytics">
+    <Layout pageTitle={PAGE_TITLES[activePage]?.[0] || 'Admin Dashboard'} pageSubtitle={PAGE_TITLES[activePage]?.[1] || ''}>
       {error && (
         <div className="alert alert-error" style={{ marginBottom: '20px' }}>
           ⚠️ {error}
         </div>
       )}
 
-      {/* Analytics Stats */}
-      {analytics && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon purple">👥</div>
-            <div className="stat-info">
-              <div className="stat-label">Total Users</div>
-              <div className="stat-value">{analytics.total_users}</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon green">✅</div>
-            <div className="stat-info">
-              <div className="stat-label">Active Users</div>
-              <div className="stat-value">{analytics.active_users}</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon blue">📧</div>
-            <div className="stat-info">
-              <div className="stat-label">Verified</div>
-              <div className="stat-value">{analytics.verified_users}</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon orange">🔒</div>
-            <div className="stat-info">
-              <div className="stat-label">Admins</div>
-              <div className="stat-value">{analytics.admin_users}</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon teal">🪪</div>
-            <div className="stat-info">
-              <div className="stat-label">Members</div>
-              <div className="stat-value">{analytics.member_users}</div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon red">⏸️</div>
-            <div className="stat-info">
-              <div className="stat-label">Inactive</div>
-              <div className="stat-value">{analytics.inactive_users}</div>
+      {/* Placeholder for non-dashboard sub-pages */}
+      {!['dashboard', 'users', 'roles'].includes(activePage) && (
+        <div className="card">
+          <div className="card-header"><div className="card-title">{PAGE_TITLES[activePage]?.[0] || activePage}</div></div>
+          <div className="card-body">
+            <div className="empty-state">
+              <div className="empty-state-icon">🚧</div>
+              <h3>Coming Soon</h3>
+              <p>This section is under development. Check back soon!</p>
+              <button className="btn btn-primary" onClick={() => navigate('/admin/dashboard')}>← Back to Dashboard</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <div className="quick-action-card" onClick={() => navigate('/admin/users/create')}>
-          <div className="qa-icon">➕</div>
-          <div className="qa-info">
-            <h3>Create User</h3>
-            <p>Add a new platform user</p>
-          </div>
-        </div>
-        <div className="quick-action-card" onClick={() => navigate('/admin/events')}>
-          <div className="qa-icon">📅</div>
-          <div className="qa-info">
-            <h3>Manage Events</h3>
-            <p>View and manage all events</p>
-          </div>
-        </div>
-        <div className="quick-action-card" onClick={() => navigate('/admin/analytics')}>
-          <div className="qa-icon">📊</div>
-          <div className="qa-info">
-            <h3>View Analytics</h3>
-            <p>Platform usage insights</p>
-          </div>
-        </div>
-        <div className="quick-action-card" onClick={() => navigate('/admin/settings')}>
-          <div className="qa-icon">⚙️</div>
-          <div className="qa-info">
-            <h3>Settings</h3>
-            <p>Configure platform settings</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
-          onClick={() => setActiveTab('users')}
-        >
-          👥 User Management <span className="tab-count">{totalUsers}</span>
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'roles' ? 'active' : ''}`}
-          onClick={() => setActiveTab('roles')}
-        >
-          🔑 Roles <span className="tab-count">{rolesList.length}</span>
-        </button>
-      </div>
-
-      {/* Users Table */}
-      {activeTab === 'users' && (
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title">All Users</div>
-              <div className="card-subtitle">Page {currentPage + 1} of {totalPages || 1}</div>
+      {/* Main dashboard + users + roles content */}
+      {['dashboard', 'users', 'roles'].includes(activePage) && (
+        <>
+          {/* Analytics Stats */}
+          {analytics && (
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon purple">👥</div>
+                <div className="stat-info">
+                  <div className="stat-label">Total Users</div>
+                  <div className="stat-value">{analytics.total_users}</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon green">✅</div>
+                <div className="stat-info">
+                  <div className="stat-label">Active Users</div>
+                  <div className="stat-value">{analytics.active_users}</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon blue">📧</div>
+                <div className="stat-info">
+                  <div className="stat-label">Verified</div>
+                  <div className="stat-value">{analytics.verified_users}</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon orange">🔒</div>
+                <div className="stat-info">
+                  <div className="stat-label">Admins</div>
+                  <div className="stat-value">{analytics.admin_users}</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon teal">🪪</div>
+                <div className="stat-info">
+                  <div className="stat-label">Members</div>
+                  <div className="stat-value">{analytics.member_users}</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon red">⏸️</div>
+                <div className="stat-info">
+                  <div className="stat-label">Inactive</div>
+                  <div className="stat-value">{analytics.inactive_users}</div>
+                </div>
+              </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/users/create')}>
-              ➕ Add User
+          )}
+
+          {/* Quick Actions */}
+          <div className="quick-actions">
+            <div className="quick-action-card" onClick={() => navigate('/admin/users/create')}>
+              <div className="qa-icon">➕</div>
+              <div className="qa-info">
+                <h3>Create User</h3>
+                <p>Add a new platform user</p>
+              </div>
+            </div>
+            <div className="quick-action-card" onClick={() => navigate('/admin/events')}>
+              <div className="qa-icon">📅</div>
+              <div className="qa-info">
+                <h3>Manage Events</h3>
+                <p>View and manage all events</p>
+              </div>
+            </div>
+            <div className="quick-action-card" onClick={() => navigate('/admin/analytics')}>
+              <div className="qa-icon">📊</div>
+              <div className="qa-info">
+                <h3>View Analytics</h3>
+                <p>Platform usage insights</p>
+              </div>
+            </div>
+            <div className="quick-action-card" onClick={() => navigate('/admin/settings')}>
+              <div className="qa-icon">⚙️</div>
+              <div className="qa-info">
+                <h3>Settings</h3>
+                <p>Configure platform settings</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="tabs">
+            <button
+              className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+              onClick={() => setActiveTab('users')}
+            >
+              👥 User Management <span className="tab-count">{totalUsers}</span>
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'roles' ? 'active' : ''}`}
+              onClick={() => setActiveTab('roles')}
+            >
+              🔑 Roles <span className="tab-count">{rolesList.length}</span>
             </button>
           </div>
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Verified</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length > 0 ? users.map((user) => (
-                  <tr key={user.id}>
-                    <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{user.full_name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone || '—'}</td>
-                    <td>
-                      <span className={`badge ${getRoleBadgeClass(user.role_name)}`}>
-                        {user.role_name || 'Unassigned'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${user.is_active ? 'status-active' : 'status-inactive'}`}>
-                        {user.is_active ? '● Active' : '● Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${user.is_verified ? 'status-verified' : 'status-unverified'}`}>
-                        {user.is_verified ? '✓ Yes' : '✗ No'}
-                      </span>
-                    </td>
-                    <td>
-                      <button className="action-btn view" onClick={() => handleViewUser(user)} title="View Details">👁️</button>
-                      <button className="action-btn edit" onClick={() => handleEditUser(user)} title="Edit User">✏️</button>
-                      <button className="action-btn role" onClick={() => handleChangeRole(user)} title="Change Role">🔑</button>
-                      <button className="action-btn toggle" onClick={() => handleToggleUserStatus(user.id, user.is_active)} title={user.is_active ? 'Disable' : 'Enable'}>
-                        {user.is_active ? '🔓' : '🔒'}
-                      </button>
-                      <button className="action-btn delete" onClick={() => handleDeleteUser(user.id)} title="Delete">🗑️</button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan="7" className="no-data">No users found</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="pagination">
-            <button className="pagination-btn" onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>← Previous</button>
-            <span className="pagination-info">Page {currentPage + 1} of {totalPages || 1} &nbsp;·&nbsp; {totalUsers} users</span>
-            <select className="page-size-select" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(0); }}>
-              <option value={5}>5 / page</option>
-              <option value={10}>10 / page</option>
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
-            </select>
-            <button className="pagination-btn" onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage >= totalPages - 1}>Next →</button>
-          </div>
-        </div>
-      )}
 
-      {/* Roles Table */}
-      {activeTab === 'roles' && (
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title">Role Management</div>
-              <div className="card-subtitle">Manage platform roles and permissions</div>
+          {/* Users Table */}
+          {activeTab === 'users' && (
+            <div className="card">
+              <div className="card-header">
+                <div>
+                  <div className="card-title">All Users</div>
+                  <div className="card-subtitle">Page {currentPage + 1} of {totalPages || 1}</div>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/users/create')}>
+                  ➕ Add User
+                </button>
+              </div>
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Verified</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.length > 0 ? users.map((user) => (
+                      <tr key={user.id}>
+                        <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{user.full_name}</td>
+                        <td>{user.email}</td>
+                        <td>{user.phone || '—'}</td>
+                        <td>
+                          <span className={`badge ${getRoleBadgeClass(user.role_name)}`}>
+                            {user.role_name || 'Unassigned'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${user.is_active ? 'status-active' : 'status-inactive'}`}>
+                            {user.is_active ? '● Active' : '● Inactive'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${user.is_verified ? 'status-verified' : 'status-unverified'}`}>
+                            {user.is_verified ? '✓ Yes' : '✗ No'}
+                          </span>
+                        </td>
+                        <td>
+                          <button className="action-btn view" onClick={() => handleViewUser(user)} title="View Details">👁️</button>
+                          <button className="action-btn edit" onClick={() => handleEditUser(user)} title="Edit User">✏️</button>
+                          <button className="action-btn role" onClick={() => handleChangeRole(user)} title="Change Role">🔑</button>
+                          <button className="action-btn toggle" onClick={() => handleToggleUserStatus(user.id, user.is_active)} title={user.is_active ? 'Disable' : 'Enable'}>
+                            {user.is_active ? '🔓' : '🔒'}
+                          </button>
+                          <button className="action-btn delete" onClick={() => handleDeleteUser(user.id)} title="Delete">🗑️</button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan="7" className="no-data">No users found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="pagination">
+                <button className="pagination-btn" onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>← Previous</button>
+                <span className="pagination-info">Page {currentPage + 1} of {totalPages || 1} &nbsp;·&nbsp; {totalUsers} users</span>
+                <select className="page-size-select" value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(0); }}>
+                  <option value={5}>5 / page</option>
+                  <option value={10}>10 / page</option>
+                  <option value={20}>20 / page</option>
+                  <option value={50}>50 / page</option>
+                </select>
+                <button className="pagination-btn" onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage >= totalPages - 1}>Next →</button>
+              </div>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={handleCreateRole}>
-              ➕ Create Role
-            </button>
-          </div>
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Role Name</th>
-                  <th>Description</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rolesList.length > 0 ? rolesList.map((role) => (
-                  <tr key={role.id || role.role_id}>
-                    <td>
-                      <span className={`badge ${getRoleBadgeClass(role.role_name || role.name)}`}>
-                        {role.role_name || role.name}
-                      </span>
-                    </td>
-                    <td>{role.description || '—'}</td>
-                    <td>
-                      <button className="action-btn edit" onClick={() => handleEditRole(role)} title="Edit Role">✏️</button>
-                      <button className="action-btn delete" onClick={() => handleDeleteRole(role.id || role.role_id)} title="Delete Role">🗑️</button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan="3" className="no-data">No roles found</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* User Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">
-                {modalType === 'view' && '👁️ User Details'}
-                {modalType === 'edit' && '✏️ Edit User'}
-                {modalType === 'changeRole' && '🔑 Change Role'}
-              </h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+          {/* Roles Table */}
+          {activeTab === 'roles' && (
+            <div className="card">
+              <div className="card-header">
+                <div>
+                  <div className="card-title">Role Management</div>
+                  <div className="card-subtitle">Manage platform roles and permissions</div>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={handleCreateRole}>
+                  ➕ Create Role
+                </button>
+              </div>
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Role Name</th>
+                      <th>Description</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rolesList.length > 0 ? rolesList.map((role) => (
+                      <tr key={role.id || role.role_id}>
+                        <td>
+                          <span className={`badge ${getRoleBadgeClass(role.role_name || role.name)}`}>
+                            {role.role_name || role.name}
+                          </span>
+                        </td>
+                        <td>{role.description || '—'}</td>
+                        <td>
+                          <button className="action-btn edit" onClick={() => handleEditRole(role)} title="Edit Role">✏️</button>
+                          <button className="action-btn delete" onClick={() => handleDeleteRole(role.id || role.role_id)} title="Delete Role">🗑️</button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan="3" className="no-data">No roles found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="modal-body">
-              {modalType === 'view' ? (
-                <div className="detail-list">
-                  {[
-                    { label: 'Full Name', value: formData.full_name },
-                    { label: 'Email', value: formData.email },
-                    { label: 'Phone', value: formData.phone || '—' },
-                    { label: 'Role', value: formData.role_name || 'Unassigned' },
-                    { label: 'Status', value: formData.is_active ? 'Active' : 'Inactive' },
-                    { label: 'Verified', value: formData.is_verified ? 'Yes' : 'No' },
-                    { label: 'Created', value: formData.created_at ? new Date(formData.created_at).toLocaleDateString() : '—' },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="detail-row">
-                      <label>{label}</label>
-                      <span>{value}</span>
+          )}
+
+          {/* User Modal */}
+          {showModal && (
+            <div className="modal-overlay" onClick={() => setShowModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2 className="modal-title">
+                    {modalType === 'view' && '👁️ User Details'}
+                    {modalType === 'edit' && '✏️ Edit User'}
+                    {modalType === 'changeRole' && '🔑 Change Role'}
+                  </h2>
+                  <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+                </div>
+                <div className="modal-body">
+                  {modalType === 'view' ? (
+                    <div className="detail-list">
+                      {[
+                        { label: 'Full Name', value: formData.full_name },
+                        { label: 'Email', value: formData.email },
+                        { label: 'Phone', value: formData.phone || '—' },
+                        { label: 'Role', value: formData.role_name || 'Unassigned' },
+                        { label: 'Status', value: formData.is_active ? 'Active' : 'Inactive' },
+                        { label: 'Verified', value: formData.is_verified ? 'Yes' : 'No' },
+                        { label: 'Created', value: formData.created_at ? new Date(formData.created_at).toLocaleDateString() : '—' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="detail-row">
+                          <label>{label}</label>
+                          <span>{value}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : modalType === 'edit' ? (
+                    <>
+                      <div className="form-group">
+                        <label>Full Name</label>
+                        <input type="text" value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="Full Name" />
+                      </div>
+                      <div className="form-group">
+                        <label>Email</label>
+                        <input type="email" value={formData.email || ''} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email" />
+                      </div>
+                      <div className="form-group">
+                        <label>Phone</label>
+                        <input type="tel" value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="form-group">
+                      <label>Select New Role</label>
+                      <select value={formData.role_name || ''} onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}>
+                        <option value="">Select a role</option>
+                        {roles.map((role) => (
+                          <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
-              ) : modalType === 'edit' ? (
-                <>
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input type="text" value={formData.full_name || ''} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="Full Name" />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input type="email" value={formData.email || ''} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email" />
-                  </div>
-                  <div className="form-group">
-                    <label>Phone</label>
-                    <input type="tel" value={formData.phone || ''} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone" />
-                  </div>
-                </>
-              ) : (
-                <div className="form-group">
-                  <label>Select New Role</label>
-                  <select value={formData.role_name || ''} onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}>
-                    <option value="">Select a role</option>
-                    {roles.map((role) => (
-                      <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
-                    ))}
-                  </select>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                  {modalType !== 'view' && (
+                    <button className="btn btn-primary" onClick={handleSaveChanges}>Save Changes</button>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-              {modalType !== 'view' && (
-                <button className="btn btn-primary" onClick={handleSaveChanges}>Save Changes</button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Role Modal */}
-      {showRoleModal && (
-        <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2 className="modal-title">{roleModalType === 'create' ? '➕ Create Role' : '✏️ Edit Role'}</h2>
-              <button className="modal-close" onClick={() => setShowRoleModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Role Name *</label>
-                <input type="text" value={roleFormData.role_name || ''} onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })} placeholder="e.g., admin, member, organizer" />
+          {/* Role Modal */}
+          {showRoleModal && (
+            <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2 className="modal-title">{roleModalType === 'create' ? '➕ Create Role' : '✏️ Edit Role'}</h2>
+                  <button className="modal-close" onClick={() => setShowRoleModal(false)}>×</button>
+                </div>
+                <div className="modal-body">
+                  <div className="form-group">
+                    <label>Role Name *</label>
+                    <input type="text" value={roleFormData.role_name || ''} onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })} placeholder="e.g., admin, member, organizer" />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea rows="3" value={roleFormData.description || ''} onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })} placeholder="Optional description of this role" />
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowRoleModal(false)}>Cancel</button>
+                  <button className="btn btn-primary" onClick={handleSaveRole}>
+                    {roleModalType === 'create' ? 'Create Role' : 'Update Role'}
+                  </button>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea rows="3" value={roleFormData.description || ''} onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })} placeholder="Optional description of this role" />
-              </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowRoleModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveRole}>
-                {roleModalType === 'create' ? 'Create Role' : 'Update Role'}
-              </button>
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </Layout>
   );

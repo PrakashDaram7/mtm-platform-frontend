@@ -602,6 +602,10 @@ export default function SignIn() {
           margin-bottom: 10px;
           text-transform: uppercase;
           letter-spacing: 1px;
+          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .btn:hover:not(:disabled) {
