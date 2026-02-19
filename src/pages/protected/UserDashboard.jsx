@@ -147,7 +147,7 @@ const UserDashboard = () => {
                         </div>
                         <div className="card">
                             <div className="card-header"><div className="card-title">Upcoming Events</div></div>
-                            <div className="card-body" style={{ padding: '12px 16px', maxHeight: '220px', overflowY: 'auto' }}>
+                            <div className="card-body" style={{ padding: '12px 16px' }}>
                                 {events.length === 0 ? (
                                     <p className="text-muted">No events available right now.</p>
                                 ) : events.slice(0, 4).map(event => (
