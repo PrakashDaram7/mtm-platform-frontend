@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import {
   getDashboardAnalytics,
+  createUser,
   getUsers,
   updateUser,
   deleteUser,
@@ -59,7 +60,7 @@ const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('view');
   const [formData, setFormData] = useState({});
-  const [roles, setRoles] = useState(['admin', 'moderator', 'organizer', 'member', 'user']);
+  const [roles, setRoles] = useState(['admin', 'finance_admin', 'event_manager', 'committee_member', 'moderator', 'member', 'family_member', 'volunteer']);
   const [rolesList, setRolesList] = useState([]);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [roleModalType, setRoleModalType] = useState('create');
@@ -116,6 +117,12 @@ const AdminDashboard = () => {
   };
 
   // ─── User handlers ───
+  const handleCreateUser = () => {
+    setSelectedUser(null);
+    setFormData({ full_name: '', email: '', phone: '', role_name: 'member' });
+    setModalType('create');
+    setShowModal(true);
+  };
   const handleViewUser = async (user) => {
     try {
       const res = await getUserDetail(user.id);
@@ -138,14 +145,23 @@ const AdminDashboard = () => {
   };
   const handleSaveChanges = async () => {
     showLoader('Saving...');
-    if (modalType === 'edit') {
-      const r = await updateUser(selectedUser.id, formData); hideLoader();
-      if (r.success) showAlert('success', 'Saved!', 'User updated.', () => { setShowModal(false); loadUsers(); });
-      else showAlert('error', 'Error', r.message);
-    } else if (modalType === 'changeRole') {
-      const r = await changeUserRole(selectedUser.id, formData.role_name); hideLoader();
-      if (r.success) showAlert('success', 'Done!', 'Role changed.', () => { setShowModal(false); loadUsers(); });
-      else showAlert('error', 'Error', r.message);
+    try {
+      if (modalType === 'create') {
+        const r = await createUser(formData); hideLoader();
+        if (r.success) showAlert('success', 'Created!', 'User created successfully.', () => { setShowModal(false); loadUsers(); });
+        else showAlert('error', 'Error', r.message || 'Failed to create user');
+      } else if (modalType === 'edit') {
+        const r = await updateUser(selectedUser.id, formData); hideLoader();
+        if (r.success) showAlert('success', 'Saved!', 'User updated.', () => { setShowModal(false); loadUsers(); });
+        else showAlert('error', 'Error', r.message);
+      } else if (modalType === 'changeRole') {
+        const r = await changeUserRole(selectedUser.id, formData.role_name); hideLoader();
+        if (r.success) showAlert('success', 'Done!', 'Role changed.', () => { setShowModal(false); loadUsers(); });
+        else showAlert('error', 'Error', r.message);
+      }
+    } catch (err) {
+      hideLoader();
+      showAlert('error', 'Error', err?.response?.data?.detail || err.message || 'Operation failed');
     }
   };
 
@@ -207,7 +223,7 @@ const AdminDashboard = () => {
   };
 
   const totalPages = Math.ceil(totalUsers / pageSize);
-  const getRoleBadgeClass = (r) => ({ admin: 'badge-admin', moderator: 'badge-moderator', organizer: 'badge-organizer', member: 'badge-member', user: 'badge-user' }[r?.toLowerCase()] || 'badge-user');
+  const getRoleBadgeClass = (r) => ({ admin: 'badge-admin', moderator: 'badge-moderator', event_manager: 'badge-organizer', finance_admin: 'badge-admin', committee_member: 'badge-moderator', member: 'badge-member', family_member: 'badge-member', volunteer: 'badge-user' }[r?.toLowerCase()] || 'badge-member');
 
   if (loading && !analytics) {
     return (
@@ -251,10 +267,10 @@ const AdminDashboard = () => {
           <div className="card">
             <div className="card-header"><div className="card-title">Recent Users</div><button className="btn btn-secondary btn-sm" onClick={() => navigate('/admin/users')}>View All →</button></div>
             <div className="table-wrapper">
-              <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
-                <tbody>{users.slice(0, 5).map(u => (
-                  <tr key={u.id}><td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{u.full_name}</td><td>{u.email}</td><td><span className={`badge ${getRoleBadgeClass(u.role_name)}`}>{u.role_name}</span></td><td><span className={`badge ${u.is_active ? 'status-active' : 'status-inactive'}`}>{u.is_active ? '● Active' : '● Inactive'}</span></td></tr>
-                ))}{users.length === 0 && <tr><td colSpan="4" className="no-data">No users</td></tr>}</tbody>
+              <table><thead><tr><th>S.No</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+                <tbody>{users.slice(0, 5).map((u, idx) => (
+                  <tr key={u.id}><td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{idx + 1}</td><td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{u.full_name}</td><td>{u.email}</td><td><span className={`badge ${getRoleBadgeClass(u.role_name)}`}>{u.role_name}</span></td><td><span className={`badge ${u.is_active ? 'status-active' : 'status-inactive'}`}>{u.is_active ? '● Active' : '● Inactive'}</span></td></tr>
+                ))}{users.length === 0 && <tr><td colSpan="5" className="no-data">No users</td></tr>}</tbody>
               </table>
             </div>
           </div>
@@ -266,14 +282,15 @@ const AdminDashboard = () => {
         <div className="card">
           <div className="card-header">
             <div><div className="card-title">All Users</div><div className="card-subtitle">Page {currentPage + 1} of {totalPages || 1} · {totalUsers} total</div></div>
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/admin/users/create')}>➕ Add User</button>
+            <button className="btn btn-primary btn-sm" onClick={handleCreateUser}>➕ Add User</button>
           </div>
           <div className="table-wrapper">
             <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Verified</th><th>Actions</th></tr></thead>
+              <thead><tr><th>S.No</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Verified</th><th>Actions</th></tr></thead>
               <tbody>
-                {users.length > 0 ? users.map(u => (
+                {users.length > 0 ? users.map((u, idx) => (
                   <tr key={u.id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{currentPage * pageSize + idx + 1}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{u.full_name}</td>
                     <td>{u.email}</td><td>{u.phone || '—'}</td>
                     <td><span className={`badge ${getRoleBadgeClass(u.role_name)}`}>{u.role_name || 'Unassigned'}</span></td>
@@ -287,7 +304,7 @@ const AdminDashboard = () => {
                       <button className="action-btn delete" onClick={() => handleDeleteUser(u.id)} title="Delete">🗑️</button>
                     </td>
                   </tr>
-                )) : <tr><td colSpan="7" className="no-data">No users found</td></tr>}
+                )) : <tr><td colSpan="8" className="no-data">No users found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -311,10 +328,11 @@ const AdminDashboard = () => {
           </div>
           <div className="table-wrapper">
             <table>
-              <thead><tr><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
+              <thead><tr><th>S.No</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
               <tbody>
-                {rolesList.length > 0 ? rolesList.map(role => (
+                {rolesList.length > 0 ? rolesList.map((role, idx) => (
                   <tr key={role.id || role.role_id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{idx + 1}</td>
                     <td><span className={`badge ${getRoleBadgeClass(role.role_name || role.name)}`}>{role.role_name || role.name}</span></td>
                     <td>{role.description || '—'}</td>
                     <td>
@@ -322,7 +340,7 @@ const AdminDashboard = () => {
                       <button className="action-btn delete" onClick={() => handleDeleteRole(role.id || role.role_id)} title="Delete">🗑️</button>
                     </td>
                   </tr>
-                )) : <tr><td colSpan="3" className="no-data">No roles found</td></tr>}
+                )) : <tr><td colSpan="4" className="no-data">No roles found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -338,10 +356,11 @@ const AdminDashboard = () => {
           </div>
           <div className="table-wrapper">
             <table>
-              <thead><tr><th>Title</th><th>Type</th><th>Date</th><th>City</th><th>Fee</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead><tr><th>S.No</th><th>Title</th><th>Type</th><th>Date</th><th>City</th><th>Fee</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>
-                {events.length > 0 ? events.map(ev => (
+                {events.length > 0 ? events.map((ev, idx) => (
                   <tr key={ev.id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{idx + 1}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{ev.title}</td>
                     <td><span className="badge badge-info">{ev.event_type}</span></td>
                     <td>{ev.start_date ? new Date(ev.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>
@@ -354,7 +373,7 @@ const AdminDashboard = () => {
                       <button className="action-btn delete" onClick={() => handleDeleteEvent(ev.id)} title="Delete">🗑️</button>
                     </td>
                   </tr>
-                )) : <tr><td colSpan="8" className="no-data">No events found</td></tr>}
+                )) : <tr><td colSpan="9" className="no-data">No events found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -413,16 +432,19 @@ const AdminDashboard = () => {
           <div className="card-body">
             <div className="table-wrapper">
               <table>
-                <thead><tr><th>Role</th><th>Users</th><th>Events</th><th>Payments</th><th>Settings</th><th>Analytics</th></tr></thead>
+                <thead><tr><th>S.No</th><th>Role</th><th>Users</th><th>Events</th><th>Payments</th><th>Settings</th><th>Analytics</th></tr></thead>
                 <tbody>
                   {[
                     { role: 'admin', users: '✅ Full', events: '✅ Full', payments: '✅ Full', settings: '✅ Full', analytics: '✅ Full' },
+                    { role: 'finance_admin', users: '❌ No', events: '🔍 View', payments: '✅ Full', settings: '❌ No', analytics: '🔍 Finance' },
+                    { role: 'event_manager', users: '❌ No', events: '✅ Full', payments: '🔍 Own', settings: '❌ No', analytics: '🔍 Events' },
+                    { role: 'committee_member', users: '❌ No', events: '✅ CRUD', payments: '❌ No', settings: '❌ No', analytics: '🔍 Limited' },
                     { role: 'moderator', users: '🔍 View', events: '🔍 View', payments: '❌ No', settings: '❌ No', analytics: '🔍 View' },
-                    { role: 'organizer', users: '❌ No', events: '✅ Full', payments: '🔍 Own', settings: '❌ No', analytics: '🔍 Own' },
                     { role: 'member', users: '❌ No', events: '🔍 View', payments: '🔍 Own', settings: '❌ No', analytics: '❌ No' },
-                    { role: 'user', users: '❌ No', events: '🔍 Public', payments: '❌ No', settings: '❌ No', analytics: '❌ No' },
-                  ].map(p => (
-                    <tr key={p.role}><td><span className={`badge ${getRoleBadgeClass(p.role)}`}>{p.role}</span></td><td>{p.users}</td><td>{p.events}</td><td>{p.payments}</td><td>{p.settings}</td><td>{p.analytics}</td></tr>
+                    { role: 'family_member', users: '❌ No', events: '🔍 View', payments: '❌ No', settings: '❌ No', analytics: '❌ No' },
+                    { role: 'volunteer', users: '❌ No', events: '🔍 View', payments: '❌ No', settings: '❌ No', analytics: '❌ No' },
+                  ].map((p, idx) => (
+                    <tr key={p.role}><td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{idx + 1}</td><td><span className={`badge ${getRoleBadgeClass(p.role)}`}>{p.role}</span></td><td>{p.users}</td><td>{p.events}</td><td>{p.payments}</td><td>{p.settings}</td><td>{p.analytics}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -460,7 +482,7 @@ const AdminDashboard = () => {
               <div className="detail-list">
                 <div className="detail-row"><label>Platform Name</label><span>MTM Platform</span></div>
                 <div className="detail-row"><label>Organization</label><span>Telugu Mahasabha</span></div>
-                <div className="detail-row"><label>Default Role</label><span className="badge badge-user">user</span></div>
+                <div className="detail-row"><label>Default Role</label><span className="badge badge-member">member</span></div>
                 <div className="detail-row"><label>OTP Expiry</label><span>5 minutes</span></div>
                 <div className="detail-row"><label>Max Login Attempts</label><span>5</span></div>
               </div>
@@ -508,7 +530,7 @@ const AdminDashboard = () => {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{modalType === 'view' ? '👁️ User Details' : modalType === 'edit' ? '✏️ Edit User' : '🔑 Change Role'}</h2>
+              <h2 className="modal-title">{modalType === 'view' ? '👁️ User Details' : modalType === 'create' ? '➕ Add New User' : modalType === 'edit' ? '✏️ Edit User' : '🔑 Change Role'}</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
             <div className="modal-body">
@@ -518,6 +540,17 @@ const AdminDashboard = () => {
                     <div key={l} className="detail-row"><label>{l}</label><span>{v}</span></div>
                   ))}
                 </div>
+              ) : modalType === 'create' ? (
+                <>
+                  <div className="form-group"><label>Full Name *</label><input type="text" value={formData.full_name || ''} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Enter full name" /></div>
+                  <div className="form-group"><label>Email *</label><input type="email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Enter email" /></div>
+                  <div className="form-group"><label>Phone</label><input type="tel" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="Enter phone number" /></div>
+                  <div className="form-group"><label>Role</label>
+                    <select value={formData.role_name || 'member'} onChange={e => setFormData({ ...formData, role_name: e.target.value })}>
+                      {roles.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1).replace('_', ' ')}</option>)}
+                    </select>
+                  </div>
+                </>
               ) : modalType === 'edit' ? (
                 <>
                   <div className="form-group"><label>Full Name</label><input type="text" value={formData.full_name || ''} onChange={e => setFormData({ ...formData, full_name: e.target.value })} /></div>

@@ -179,10 +179,11 @@ const UserDashboard = () => {
                     </div>
                     <div className="table-wrapper">
                         <table>
-                            <thead><tr><th>Event</th><th>Date</th><th>Location</th><th>Type</th><th>Fee</th><th>Action</th></tr></thead>
+                            <thead><tr><th>S.No</th><th>Event</th><th>Date</th><th>Location</th><th>Type</th><th>Fee</th><th>Action</th></tr></thead>
                             <tbody>
-                                {events.map(event => (
+                                {events.map((event, idx) => (
                                     <tr key={event.id}>
+                                        <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{idx + 1}</td>
                                         <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{event.title}</td>
                                         <td>{new Date(event.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                                         <td>{event.city || event.location || 'Online'}</td>
@@ -193,7 +194,7 @@ const UserDashboard = () => {
                                         <td><button className="btn btn-primary btn-sm" onClick={() => handleRegister(event.id)}>Register</button></td>
                                     </tr>
                                 ))}
-                                {events.length === 0 && <tr><td colSpan="6" className="no-data">No events available</td></tr>}
+                                {events.length === 0 && <tr><td colSpan="7" className="no-data">No events available</td></tr>}
                             </tbody>
                         </table>
                     </div>

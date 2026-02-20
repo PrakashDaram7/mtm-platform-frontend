@@ -7,22 +7,8 @@ import { showAlert, showLoader, hideLoader } from '../../utils/alerts';
 const OTP_TIMER_SECONDS = 120;
 const MAX_OTP_ATTEMPTS = 3;
 
-const COUNTRY_CODES = [
-  { code: '+230', country: 'Mauritius', flag: '🇲🇺', pattern: /^[245-9]\d{7}$/ },
-  { code: '+91', country: 'India', flag: '🇮🇳', pattern: /^[6-9]\d{9}$/ },
-  { code: '+1', country: 'USA/Canada', flag: '🇺🇸', pattern: /^\d{10}$/ },
-  { code: '+44', country: 'UK', flag: '🇬🇧', pattern: /^\d{10}$/ },
-  { code: '+61', country: 'Australia', flag: '🇦🇺', pattern: /^[4-5]\d{8}$/ },
-  { code: '+27', country: 'South Africa', flag: '🇿🇦', pattern: /^\d{9}$/ },
-  { code: '+971', country: 'UAE', flag: '🇦🇪', pattern: /^[5]\d{8}$/ },
-  { code: '+65', country: 'Singapore', flag: '🇸🇬', pattern: /^[8-9]\d{7}$/ },
-];
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\d{10}$/; // Exactly 10 digits
-const NAME_REGEX = /^[a-zA-Z\s'-]{2,50}$/; // Letters, spaces, hyphens, apostrophes only
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-// Password: min 8 chars, must have lowercase, uppercase, digit, special char
+const NAME_REGEX = /^[a-zA-Z\s'-]{2,50}$/;
 
 function validateEmail(email) {
   const cleanEmail = email.trim().toLowerCase();
@@ -46,53 +32,12 @@ function validateFullName(name) {
   return { valid: true, value: trimmedName };
 }
 
-function validatePhone(phone) {
-  if (!phone) return { valid: true, value: null }; // Phone is optional
-  const cleanPhone = phone.trim().replace(/\D/g, ''); // Remove non-digits
-  if (cleanPhone.length !== 10) {
-    return { valid: false, error: 'Phone number must be exactly 10 digits' };
-  }
-  if (!PHONE_REGEX.test(cleanPhone)) {
-    return { valid: false, error: 'Phone number must contain only digits' };
-  }
-  return { valid: true, value: cleanPhone };
-}
-
-function validatePassword(password) {
-  if (!password) return { valid: false, error: 'Password is required' };
-  if (password.length < 8) return { valid: false, error: 'Password must be at least 8 characters' };
-  
-  // Check byte length (bcrypt has a 72-byte limit)
-  const byteLength = new TextEncoder().encode(password).length;
-  if (byteLength > 72) {
-    return { valid: false, error: `Password is too long. Maximum 72 bytes allowed (your password is ${byteLength} bytes)` };
-  }
-  
-  if (!PASSWORD_REGEX.test(password)) {
-    return {
-      valid: false,
-      error: 'Password must contain uppercase, lowercase, digit, and special character (@$!%*?&)'
-    };
-  }
-  return { valid: true };
-}
-
-function validatePasswordMatch(password, confirm) {
-  if (password !== confirm) return { valid: false, error: 'Passwords do not match' };
-  return { valid: true };
-}
-
 export default function SignUp() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [otpSent, setOtpSent] = useState(false);
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
@@ -132,12 +77,9 @@ export default function SignUp() {
     e.preventDefault();
     setError('');
 
-    // Validate inputs
+    // Validate inputs — only name and email required (no password!)
     const nameVal = validateFullName(fullName);
     const emailVal = validateEmail(email);
-    const phoneVal = validatePhone(phone);
-    const passVal = validatePassword(password);
-    const confirmVal = validatePasswordMatch(password, confirmPassword);
 
     if (!nameVal.valid) {
       setError(nameVal.error);
@@ -145,18 +87,6 @@ export default function SignUp() {
     }
     if (!emailVal.valid) {
       setError(emailVal.error);
-      return;
-    }
-    if (!phoneVal.valid) {
-      setError(phoneVal.error);
-      return;
-    }
-    if (!passVal.valid) {
-      setError(passVal.error);
-      return;
-    }
-    if (!confirmVal.valid) {
-      setError(confirmVal.error);
       return;
     }
 
@@ -201,9 +131,7 @@ export default function SignUp() {
   };
 
   const handleOtpInputChange = (index, value) => {
-    // Prevent input if OTP has expired
     if (isTimerExpired) return;
-    
     if (!/^\d*$/.test(value)) return;
     if (value.length > 1) return;
     const newOtpDigits = [...otpDigits];
@@ -226,50 +154,41 @@ export default function SignUp() {
   };
 
   const verifyOtpHandler = async (otp) => {
-    // Prevent verification if OTP expired
     if (isTimerExpired) {
       setError('OTP has expired. Please request a new one.');
       return;
     }
-    
+
     showLoader('Creating Account', 'Please wait...');
     setVerificationInProgress(true);
     setError('');
 
     try {
+      // No password in payload — OTP-only authentication
       const payload = {
         email: email.trim(),
         otp: otp,
         full_name: fullName.trim(),
         phone: phone.trim() || null,
-        password: password
       };
-      
+
       console.log('📤 Sending verification payload:', {
         email: payload.email,
         otp: payload.otp,
         full_name: payload.full_name,
         phone: payload.phone,
-        password_length: payload.password?.length || 0,
-        password_bytes: new TextEncoder().encode(payload.password).length
       });
-      
+
       const response = await verifyOTP(payload);
       hideLoader();
 
       console.log('📥 Verify OTP Response:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response || {}));
 
       if (response && response.success) {
         // Clear OTP digits immediately to prevent useEffect from re-triggering
         setOtpDigits(['', '', '', '', '', '']);
         setOtpSent(false);
-        
-        console.log('✅ Response has success flag, accessing tokens...');
-        console.log('Access Token:', response.access_token ? 'Present' : 'MISSING');
-        console.log('Refresh Token:', response.refresh_token ? 'Present' : 'MISSING');
-        
+
         if (!response.access_token || !response.refresh_token) {
           console.error('❌ Tokens missing from response:', response);
           setError('Server error: Tokens not received. Please try again.');
@@ -277,11 +196,11 @@ export default function SignUp() {
           otpInputRefs.current[0]?.focus();
           return;
         }
-        
+
         try {
           storage.setAccessToken(response.access_token);
           storage.setRefreshToken(response.refresh_token);
-          storage.setUserRole(response.role || 'user');
+          storage.setUserRole(response.role || 'member');
           console.log('✅ Tokens stored successfully');
         } catch (storageErr) {
           console.error('❌ Error storing tokens:', storageErr);
@@ -302,14 +221,9 @@ export default function SignUp() {
     } catch (err) {
       hideLoader();
       console.error('❌ Error in verifyOtpHandler:', err);
-      console.error('Error details:', {
-        message: err?.message,
-        response: err?.response?.status,
-        data: err?.response?.data
-      });
-      
+
       let errorMsg = 'An error occurred. Please try again.';
-      
+
       if (err?.response?.data?.message) {
         errorMsg = err.response.data.message;
       } else if (err?.response?.data?.detail) {
@@ -317,7 +231,7 @@ export default function SignUp() {
       } else if (err?.message) {
         errorMsg = err.message;
       }
-      
+
       setError(errorMsg);
       setOtpDigits(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();
@@ -407,16 +321,6 @@ export default function SignUp() {
         }
         .form-group input.error {
           border-color: #e74c3c;
-        }
-        .password-wrapper {
-          position: relative;
-        }
-        .password-toggle {
-          position: absolute;
-          right: 12px;
-          top: 38px;
-          cursor: pointer;
-          font-size: 18px;
         }
         .help-text { font-size: 12px; color: #999; margin-top: 6px; }
         .error-text {
@@ -541,8 +445,8 @@ export default function SignUp() {
           <div className="signup-card">
             <h2 className="signup-title">Sign Up</h2>
             <p className="signup-subtitle">
-              {!otpSent 
-                ? 'Fill in your details to create an account' 
+              {!otpSent
+                ? 'Fill in your details to create an account'
                 : 'Enter the 6-digit OTP sent to your email'}
             </p>
 
@@ -568,43 +472,6 @@ export default function SignUp() {
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                   />
-                </div>
-
-                <div className="form-group password-wrapper">
-                  <label>Password *</label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Min 8 chars: uppercase, lowercase, digit, special char"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={loading}
-                  />
-                  <span
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </span>
-                  <div className="help-text">
-                    {password ? `${new TextEncoder().encode(password).length} / 72 bytes` : 'Max 72 bytes'}
-                  </div>
-                </div>
-
-                <div className="form-group password-wrapper">
-                  <label>Confirm Password *</label>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={loading}
-                  />
-                  <span
-                    className="password-toggle"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
-                  </span>
                 </div>
 
                 <div className="form-group">

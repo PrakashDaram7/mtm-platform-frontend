@@ -22,6 +22,22 @@ export const getDashboardAnalytics = async () => {
 };
 
 /**
+ * Create a new user (admin only)
+ * 
+ * @param {object} userData - { full_name, email, phone, role_name }
+ * @returns {Promise} - Created user
+ */
+export const createUser = async (userData) => {
+  try {
+    const response = await apiClient.post('/admin/users', userData);
+    return response.data;
+  } catch (error) {
+    console.error('Create user error:', error);
+    throw error;
+  }
+};
+
+/**
  * Get users list with pagination
  * 
  * @param {number} skip - Records to skip
@@ -188,7 +204,7 @@ export const updateRole = async (roleId, roleName = null, description = null) =>
     const payload = {};
     if (roleName) payload.role_name = roleName;
     if (description) payload.description = description;
-    
+
     const response = await apiClient.put(`/admin/roles/${roleId}`, payload);
     return response.data;
   } catch (error) {

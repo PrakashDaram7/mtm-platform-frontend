@@ -14,7 +14,7 @@ const LandingPage = () => {
   return (
     <div>
       <Header onNavigate={navigate} onScrollToSection={scrollToSection} />
-      
+
       {/* Hero Section */}
       <section id="home" className="py-5" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '600px' }}>
         <div className="container">
@@ -24,7 +24,7 @@ const LandingPage = () => {
               <p className="lead mb-4">
                 Transform your business with our comprehensive digital solutions
               </p>
-              <button 
+              <button
                 className="btn btn-light btn-lg"
                 onClick={() => navigate('/auth/signup')}
               >
@@ -45,7 +45,7 @@ const LandingPage = () => {
             <h2 className="display-5 fw-bold mb-3">About MTM Platform</h2>
             <p className="lead text-muted">Empowering businesses with cutting-edge solutions</p>
           </div>
-          
+
           {/* Features Grid */}
           <div className="row g-4 mb-5">
             {[
@@ -73,8 +73,8 @@ const LandingPage = () => {
             <div className="col-lg-6">
               <h3 className="fw-bold mb-3">Why Choose Us?</h3>
               <p className="text-muted mb-4">
-                MTM Digital Platform is built on years of expertise and industry best practices. 
-                We combine cutting-edge technology with user-centric design to deliver solutions 
+                MTM Digital Platform is built on years of expertise and industry best practices.
+                We combine cutting-edge technology with user-centric design to deliver solutions
                 that truly make a difference.
               </p>
               <ul className="list-unstyled">
@@ -120,12 +120,12 @@ const LandingPage = () => {
                 <h5 className="fw-bold">📍 Address</h5>
                 <p className="text-muted">123 Innovation Street<br />Tech City, TC 12345<br />United States</p>
               </div>
-              
+
               <div className="mb-4">
                 <h5 className="fw-bold">📞 Phone</h5>
                 <p className="text-muted">+1 (555) 123-4567<br />+1 (555) 987-6543</p>
               </div>
-              
+
               <div className="mb-4">
                 <h5 className="fw-bold">📧 Email</h5>
                 <p className="text-muted">support@mtmplatform.com<br />hello@mtmplatform.com</p>
@@ -142,10 +142,10 @@ const LandingPage = () => {
               <form className="bg-white p-4 rounded shadow-sm">
                 <div className="mb-3">
                   <label htmlFor="name" className="form-label">Full Name</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="form-control"
-                    id="name" 
+                    id="name"
                     placeholder="Your Name"
                     required
                   />
@@ -153,10 +153,10 @@ const LandingPage = () => {
 
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">Email Address</label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     className="form-control"
-                    id="email" 
+                    id="email"
                     placeholder="your@email.com"
                     required
                   />
@@ -164,19 +164,19 @@ const LandingPage = () => {
 
                 <div className="mb-3">
                   <label htmlFor="phone" className="form-label">Phone Number</label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     className="form-control"
-                    id="phone" 
+                    id="phone"
                     placeholder="+1 (555) 000-0000"
                   />
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="message" className="form-label">Message</label>
-                  <textarea 
+                  <textarea
                     className="form-control"
-                    id="message" 
+                    id="message"
                     placeholder="Your message here..."
                     rows="5"
                     required

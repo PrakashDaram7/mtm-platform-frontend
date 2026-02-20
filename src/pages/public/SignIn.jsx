@@ -121,8 +121,6 @@ export default function SignIn() {
   const [verificationInProgress, setVerificationInProgress] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const otpInputRefs = useRef([]);
 
   // Timer countdown
@@ -296,16 +294,6 @@ export default function SignIn() {
         showAlert('error', 'Missing Information', 'Please enter your full name');
         return;
       }
-      if (!password.trim()) {
-        setError('Password is required for signup');
-        showAlert('error', 'Missing Information', 'Please enter a password');
-        return;
-      }
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters');
-        showAlert('error', 'Weak Password', 'Password must be at least 6 characters');
-        return;
-      }
     }
 
     setVerificationInProgress(true);
@@ -325,7 +313,6 @@ export default function SignIn() {
 
       if (isSignupMode) {
         payload.full_name = fullName;
-        payload.password = password;
       }
 
       const response = await verifyOTP(payload);
@@ -334,24 +321,33 @@ export default function SignIn() {
       if (response.success) {
         storage.setAccessToken(response.access_token);
         storage.setRefreshToken(response.refresh_token);
-        storage.setUserRole(response.role || 'user');
-        if (response.user) {
-          storage.setUserData(response.user);
-        }
+        storage.setUserRole(response.role || 'member');
+
+        // Store user data — backend returns fields at root level, not in a user object
+        const userInfo = response.user || {
+          id: response.user_id,
+          full_name: response.full_name,
+          email: response.email,
+          role: response.role,
+        };
+        storage.setUserData(userInfo);
 
         const successMsg = isSignupMode ? 'Account Created Successfully!' : 'Login Successful!';
         const welcomeMsg = isSignupMode ? 'Welcome to MTM Platform!' : 'Welcome back!';
 
         showAlert('success', successMsg, welcomeMsg, () => {
-          const userRole = response.role || 'user';
+          const userRole = response.role || 'member';
           const dashboardMap = {
             admin: '/admin/dashboard',
+            finance_admin: '/finance/dashboard',
+            event_manager: '/events/dashboard',
+            committee_member: '/committee/dashboard',
             moderator: '/moderator/dashboard',
-            organizer: '/organizer/dashboard',
             member: '/member/dashboard',
-            user: '/user/dashboard',
+            family_member: '/member/dashboard',
+            volunteer: '/member/dashboard',
           };
-          navigate(dashboardMap[userRole] || '/user/dashboard');
+          navigate(dashboardMap[userRole] || '/member/dashboard');
         });
       } else {
         showAlert('error', 'Invalid OTP', response.message || 'Invalid OTP. Please try again.');
