@@ -13,6 +13,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from '../pages/public/LandingPage.jsx';
 import SignIn from '../pages/public/SignIn.jsx';
 import SignUp from '../pages/public/Signup.jsx';
+import MembershipApplication from '../pages/public/MembershipApplication.jsx';
 import NotFound from '../pages/public/NotFound.jsx';
 
 // Admin pages — split components
@@ -45,7 +46,9 @@ export default function AppRoutes() {
         {/* ─── Public Routes ─── */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth/signin" element={<SignIn />} />
-        <Route path="/auth/signup" element={<SignUp />} />
+        <Route path="/auth/signup" element={<MembershipApplication />} />
+        <Route path="/membership/apply" element={<MembershipApplication />} />
+        <Route path="/membership/status" element={<MembershipApplication />} />
 
         {/* ─── Admin Routes (each page is its own component) ─── */}
         <Route path="/admin/dashboard" element={<ProtectedRoute component={AdminOverview} requiredRole="admin" />} />

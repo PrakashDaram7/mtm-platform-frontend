@@ -16,23 +16,40 @@ const LandingPage = () => {
       <Header onNavigate={navigate} onScrollToSection={scrollToSection} />
 
       {/* Hero Section */}
-      <section id="home" className="py-5" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', minHeight: '600px' }}>
+      <section id="home" className="py-5" style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)', minHeight: '600px' }}>
         <div className="container">
           <div className="row align-items-center" style={{ minHeight: '500px' }}>
             <div className="col-lg-6 text-white mb-4 mb-lg-0">
-              <h1 className="display-4 fw-bold mb-4">Welcome to MTM Digital Platform</h1>
-              <p className="lead mb-4">
-                Transform your business with our comprehensive digital solutions
+              <div style={{ display: 'inline-block', background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 30, padding: '5px 16px', marginBottom: 16, fontSize: '0.82rem', color: '#a78bfa', fontWeight: 600 }}>
+                🕉️ Mauritius Telugu Mahasabha
+              </div>
+              <h1 className="display-4 fw-bold mb-4">
+                Your Community,<br />Digitally Connected
+              </h1>
+              <p className="lead mb-4" style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.7 }}>
+                Join MTM's digital platform — manage your membership, register for events,
+                connect with the Telugu community in Mauritius, and access exclusive member benefits.
               </p>
-              <button
-                className="btn btn-light btn-lg"
-                onClick={() => navigate('/auth/signup')}
-              >
-                Get Started Now
-              </button>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-lg"
+                  style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 12, padding: '0.75rem 1.8rem' }}
+                  onClick={() => navigate('/membership/apply')}
+                >
+                  🎫 Apply for Membership
+                </button>
+                <button
+                  className="btn btn-lg"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.2)', borderRadius: 12, padding: '0.75rem 1.8rem' }}
+                  onClick={() => navigate('/auth/signin')}
+                >
+                  Sign In
+                </button>
+              </div>
             </div>
             <div className="col-lg-6 text-center">
-              <div style={{ fontSize: '200px' }}>🚀</div>
+              <div style={{ fontSize: '160px', filter: 'drop-shadow(0 0 40px rgba(167,139,250,0.3))' }}>🕉️</div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', marginTop: -8 }}>Mauritius Telugu Mahasabha</p>
             </div>
           </div>
         </div>
