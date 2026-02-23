@@ -165,7 +165,34 @@ const MembershipApplication = () => {
         setErrors(e); return Object.keys(e).length === 0;
     };
 
-    const goToStep2 = () => { if (validateStep1()) setStep(2); };
+    const goToStep2 = async () => {
+        if (!validateStep1()) return;
+        setLoading(true);
+        try {
+            const r = await api.post('/auth/check-exists', { email: form.email, phone: form.phone || '' });
+            if (r.data.exists) {
+                const msg = (
+                    <span>
+                        {r.data.message}{' '}
+                        {r.data.show_login && (
+                            <span
+                                onClick={() => navigate('/auth/signin')}
+                                style={{ textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                                Click to Login
+                            </span>
+                        )}
+                    </span>
+                );
+                setErrors({ [r.data.field]: msg });
+            } else {
+                setStep(2);
+            }
+        } catch (e) {
+            setErrors({ email: 'Failed to verify availability.' });
+        }
+        setLoading(false);
+    };
 
     const sendOtp = async () => {
         if (!selectedPlan) { setErrors({ plan: 'Please select a plan' }); return; }
@@ -461,36 +488,68 @@ const MembershipApplication = () => {
                         {/* ── STEP 4 ─────────────────────────────────────────── */}
                         {step === 4 && (
                             <div style={{ textAlign: 'center' }}>
+                                {/* Purple icon (not green — no auto-approve) */}
                                 <div style={{
                                     width: 76, height: 76, borderRadius: '50%', margin: '0 auto 1.25rem',
-                                    background: 'linear-gradient(135deg,#10B981,#059669)',
+                                    background: 'linear-gradient(135deg,#6C3CE1,#8B5CF6)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '2.2rem', boxShadow: '0 12px 32px rgba(16,185,129,0.35)',
+                                    fontSize: '2.2rem', boxShadow: '0 12px 32px rgba(108,60,225,0.35)',
                                 }}>🎉</div>
-                                <h3 style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 800, marginBottom: 8 }}>Application Submitted!</h3>
 
-                                {submittedMembership?.status === 'active' ? (
-                                    <>
-                                        <p style={{ color: '#6B7280', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1rem' }}>
-                                            Your membership has been <strong style={{ color: '#059669' }}>auto-approved</strong>!
-                                        </p>
-                                        <div style={{ background: '#ECFDF5', border: '1.5px solid #A7F3D0', borderRadius: 12, padding: '0.9rem 1.1rem', margin: '0 0 1.25rem', textAlign: 'left' }}>
-                                            <p style={{ color: '#065F46', fontWeight: 700, marginBottom: 6, fontSize: '0.875rem' }}>Membership Details</p>
-                                            <p style={{ margin: '3px 0', color: '#374151', fontSize: '0.83rem' }}><strong>Member #:</strong> {submittedMembership.membership_number}</p>
-                                            <p style={{ margin: '3px 0', color: '#374151', fontSize: '0.83rem' }}><strong>Plan:</strong> {submittedMembership.plan_name}</p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p style={{ color: '#6B7280', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                                        Your application is <strong style={{ color: '#D97706' }}>under review</strong>.<br />
-                                        You'll be notified by email once approved.
+                                <h3 style={{ color: '#111827', fontSize: '1.15rem', fontWeight: 800, marginBottom: 6 }}>
+                                    Application Submitted!
+                                </h3>
+                                <p style={{ color: '#6B7280', fontSize: '0.84rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                                    Thank you,{' '}
+                                    <strong style={{ color: '#111827' }}>{form.full_name}</strong>!
+                                    Your application is now{' '}
+                                    <strong style={{ color: '#D97706' }}>under review</strong>.
+                                </p>
+
+                                {/* What happens next */}
+                                <div style={{
+                                    background: '#FFFBEB', border: '1.5px solid #FDE68A',
+                                    borderRadius: 14, padding: '1.1rem 1.25rem',
+                                    marginBottom: '1rem', textAlign: 'left',
+                                }}>
+                                    <p style={{ margin: '0 0 12px', color: '#92400E', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        ⏳ What Happens Next
                                     </p>
-                                )}
-
-                                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    <PBtn onClick={() => navigate('/member/dashboard')}>Go to Member Portal →</PBtn>
-                                    <GBtn onClick={() => navigate('/')}>Back to Home</GBtn>
+                                    {[
+                                        { icon: '🔍', title: 'Admin Review', desc: 'Our team will review your application within 1–2 business days.' },
+                                        { icon: '📧', title: 'Payment Link via Email', desc: `Once approved, a payment link will be sent to ${form.email}.` },
+                                        { icon: '💳', title: 'Complete Payment', desc: 'Click the link in your email to securely pay your membership fee.' },
+                                        { icon: '✅', title: 'Membership Activated', desc: "You'll receive your member number and can sign into your portal." },
+                                    ].map((s, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: 12, marginBottom: i < 3 ? 12 : 0, alignItems: 'flex-start' }}>
+                                            <div style={{
+                                                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                                                background: 'rgba(245,158,11,0.12)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '0.9rem',
+                                            }}>{s.icon}</div>
+                                            <div>
+                                                <p style={{ margin: '4px 0 2px', fontWeight: 700, color: '#92400E', fontSize: '0.8rem' }}>{s.title}</p>
+                                                <p style={{ margin: 0, color: '#78350F', fontSize: '0.76rem', lineHeight: 1.5 }}>{s.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
+
+                                {/* Email reminder */}
+                                <div style={{
+                                    background: '#F5F3FF', border: '1.5px solid #DDD6FE',
+                                    borderRadius: 12, padding: '0.8rem 1rem',
+                                    marginBottom: '1.25rem',
+                                }}>
+                                    <p style={{ margin: 0, color: '#5B21B6', fontSize: '0.79rem', lineHeight: 1.5 }}>
+                                        📬 Keep an eye on{' '}
+                                        <strong>{form.email}</strong>
+                                        {' '}for your payment link. Check your spam folder if you don't see it within 2 business days.
+                                    </p>
+                                </div>
+
+                                <GBtn onClick={() => navigate('/')}>Back to Home</GBtn>
                             </div>
                         )}
                     </div>

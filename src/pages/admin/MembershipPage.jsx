@@ -271,6 +271,11 @@ const ApplicationsTab = () => {
     const [reason, setReason] = useState('');
     const [feedback, setFeedback] = useState('');
     const [fbType, setFbType] = useState('success');
+    const [payModal, setPayModal] = useState(null);
+    const [payLink, setPayLink] = useState('');
+    const [payNote, setPayNote] = useState('');
+    const [paying, setPaying] = useState(false);
+
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -297,6 +302,32 @@ const ApplicationsTab = () => {
         } catch (e) { setFeedback(e.response?.data?.detail || 'Error'); setFbType('error'); }
     };
 
+    const sendPaymentLink = async () => {
+        if (!payLink.trim().startsWith('http')) {
+            setFeedback('Please enter a valid URL starting with http'); setFbType('error'); return;
+        }
+        setPaying(true);
+        try {
+            const r = await api.post(`/members/admin/${payModal.id}/send-payment-link`, {
+                payment_link: payLink.trim(),
+                notes: payNote.trim(),
+            });
+            setFeedback(
+                r.data.email_sent
+                    ? `✅ Payment link emailed to ${payModal.user?.email}!`
+                    : `⚠️ Link saved but email failed — check SMTP config.`
+            );
+            setFbType(r.data.email_sent ? 'success' : 'info');
+            setPayModal(null); setPayLink(''); setPayNote('');
+            load();
+        } catch (e) {
+            setFeedback(e.response?.data?.detail || 'Failed to send payment link');
+            setFbType('error');
+        }
+        setPaying(false);
+    };
+
+
     return (
         <div>
             <Alert msg={feedback} onClose={() => setFeedback('')} type={fbType} />
@@ -313,46 +344,57 @@ const ApplicationsTab = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {memberships.map(m => (
                         <div key={m.id} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             background: '#fff', border: '1.5px solid #E5E7EB',
                             borderLeft: '4px solid #F59E0B',
-                            borderRadius: 12, padding: '1rem 1.25rem', flexWrap: 'wrap', gap: 12,
+                            borderRadius: 12, padding: '1rem 1.25rem',
                             boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                <div style={{
-                                    width: 44, height: 44, borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #6C3CE1, #8B5CF6)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '1rem', fontWeight: 800, color: '#fff', flexShrink: 0,
-                                }}>
-                                    {(m.user?.full_name || 'M').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                    <div style={{
+                                        width: 44, height: 44, borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #6C3CE1, #8B5CF6)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '1rem', fontWeight: 800, color: '#fff', flexShrink: 0,
+                                    }}>
+                                        {(m.user?.full_name || 'M').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                    </div>
+                                    <div>
+                                        <p style={{ margin: 0, color: '#111827', fontWeight: 700, fontSize: '0.95rem' }}>{m.user?.full_name || '—'}</p>
+                                        <p style={{ margin: '2px 0', color: '#6B7280', fontSize: '0.8rem' }}>
+                                            {m.user?.email} {m.user?.phone ? `· ${m.user.phone}` : ''}
+                                        </p>
+                                        <p style={{ margin: '4px 0 0', color: '#6C3CE1', fontSize: '0.8rem', fontWeight: 500 }}>
+                                            {m.plan_name} · {m.membership_type} · Applied {fmtDate(m.created_at)}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p style={{ margin: 0, color: '#111827', fontWeight: 700, fontSize: '0.95rem' }}>{m.user?.full_name || '—'}</p>
-                                    <p style={{ margin: '2px 0', color: '#6B7280', fontSize: '0.8rem' }}>
-                                        {m.user?.email} {m.user?.phone ? `· ${m.user.phone}` : ''}
-                                    </p>
-                                    <p style={{ margin: '4px 0 0', color: '#6C3CE1', fontSize: '0.8rem', fontWeight: 500 }}>
-                                        {m.plan_name} · {m.membership_type} · Applied {fmtDate(m.created_at)}
-                                    </p>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <button onClick={() => { setSelected(m); setAction('approve'); setReason(''); }}
+                                        style={{ padding: '0.5rem 1rem', background: '#ECFDF5', border: '1.5px solid #A7F3D0', borderRadius: 8, color: '#065F46', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}>
+                                        ✓ Approve
+                                    </button>
+                                    <button onClick={() => { setPayModal(m); setPayLink(''); setPayNote(''); }}
+                                        style={{ padding: '0.5rem 1rem', background: '#F5F3FF', border: '1.5px solid #DDD6FE', borderRadius: 8, color: '#6C3CE1', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}>
+                                        💳 Send Payment Link
+                                    </button>
+                                    <button onClick={() => { setSelected(m); setAction('reject'); setReason(''); }}
+                                        style={{ padding: '0.5rem 1rem', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 8, color: '#991B1B', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}>
+                                        ✗ Reject
+                                    </button>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => { setSelected(m); setAction('approve'); setReason(''); }}
-                                    style={{ padding: '0.5rem 1.1rem', background: '#ECFDF5', border: '1.5px solid #A7F3D0', borderRadius: 8, color: '#065F46', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
-                                    ✓ Approve
-                                </button>
-                                <button onClick={() => { setSelected(m); setAction('reject'); setReason(''); }}
-                                    style={{ padding: '0.5rem 1.1rem', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 8, color: '#991B1B', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}>
-                                    ✗ Reject
-                                </button>
-                            </div>
+                            {m.admin_notes && m.admin_notes.includes('[Payment Link Sent]') && (
+                                <div style={{ marginTop: 10, padding: '5px 10px', background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 6, fontSize: '0.73rem', color: '#6C3CE1', fontWeight: 600 }}>
+                                    💳 Payment link already sent — you can resend if needed.
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
             )}
 
+            {/* Approve / Reject Modal */}
             <Modal open={!!selected && !!action} onClose={() => { setSelected(null); setAction(null); }}
                 title={action === 'approve' ? 'Approve Application' : 'Reject Application'}>
                 {selected && (
@@ -370,8 +412,46 @@ const ApplicationsTab = () => {
                         <div style={{ display: 'flex', gap: 10 }}>
                             <BtnGhost onClick={() => { setSelected(null); setAction(null); }} style={{ flex: 1 }}>Cancel</BtnGhost>
                             {action === 'approve'
-                                ? <BtnSuccess onClick={doAction}>Approve & Issue Number</BtnSuccess>
+                                ? <BtnSuccess onClick={doAction}>Approve &amp; Issue Number</BtnSuccess>
                                 : <BtnDanger onClick={doAction}>Reject Application</BtnDanger>}
+                        </div>
+                    </>
+                )}
+            </Modal>
+
+            {/* Send Payment Link Modal */}
+            <Modal open={!!payModal} onClose={() => { setPayModal(null); setPayLink(''); setPayNote(''); }}
+                title="💳 Send Payment Link">
+                {payModal && (
+                    <>
+                        <div style={{ background: '#F5F3FF', border: '1px solid #DDD6FE', borderRadius: 10, padding: '0.9rem', marginBottom: '1rem' }}>
+                            <p style={{ margin: 0, fontWeight: 700, color: '#111827' }}>{payModal.user?.full_name}</p>
+                            <p style={{ margin: '2px 0 0', color: '#6C3CE1', fontSize: '0.8rem' }}>{payModal.user?.email} · {payModal.plan_name}</p>
+                        </div>
+                        <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8, padding: '0.7rem 0.9rem', marginBottom: '1rem' }}>
+                            <p style={{ margin: 0, color: '#92400E', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                                📧 An email with the payment link will be sent to <strong>{payModal.user?.email}</strong>.
+                                Application stays <strong>pending</strong> until you approve after payment.
+                            </p>
+                        </div>
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#374151', marginBottom: 4 }}>Payment Link URL *</label>
+                        <input style={inp} type="url" placeholder="https://pay.example.com/membership/..."
+                            value={payLink} onChange={e => setPayLink(e.target.value)} />
+                        <label style={{ display: 'block', fontWeight: 600, fontSize: '0.8rem', color: '#374151', marginBottom: 4 }}>Note for Member (optional)</label>
+                        <textarea value={payNote} onChange={e => setPayNote(e.target.value)}
+                            style={{ ...inp, resize: 'vertical', minHeight: 70 }}
+                            placeholder="e.g. Please complete payment within 7 days…" />
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <BtnGhost onClick={() => { setPayModal(null); setPayLink(''); setPayNote(''); }} style={{ flex: 1 }}>Cancel</BtnGhost>
+                            <button onClick={sendPaymentLink} disabled={paying || !payLink.trim()} style={{
+                                padding: '0.6rem 1.2rem',
+                                background: paying || !payLink.trim() ? '#C4B5FD' : 'linear-gradient(135deg,#6C3CE1,#8B5CF6)',
+                                border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700,
+                                cursor: paying || !payLink.trim() ? 'not-allowed' : 'pointer',
+                                fontSize: '0.875rem', fontFamily: 'Inter, sans-serif',
+                            }}>
+                                {paying ? '⏳ Sending…' : '💳 Send Payment Link'}
+                            </button>
                         </div>
                     </>
                 )}
